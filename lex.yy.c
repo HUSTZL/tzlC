@@ -2026,14 +2026,6 @@ void yyfree (void * ptr )
 #line 69 "lex.l"
 
 
-/* 和bison联用时，不需要这部分
-void main()
-{
-yylex();
-return 0;
-}
-
-*/
 int yywrap()
 {
 return 1;

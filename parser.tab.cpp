@@ -77,19 +77,18 @@ extern FILE *yyin;
 void yyerror(const char* fmt, ...);
 extern "C" int yylex();
 #define SavePosition t->Line=yylloc.first_line;t->Column=yylloc.first_column
-typedef struct YYLVAL
- {
-	int         type_int;
+typedef struct YYLVAL {
+       int         type_int;
 	float       type_float;
 	char        type_id[32];
 
 	ProgAST     *program;
 	vector <ExtDefAST *> ExtDefList;  	    //外部定义（外部变量、函数）列表
-    ExtDefAST   *ExtDef;
-    vector <VarDecAST*>  ExtDecList;        //外部、局部变量列表
-    TypeAST     *Specifier;
-    VarDecAST *VarDec;
-    CompStmAST  *CompSt;
+       ExtDefAST   *ExtDef;
+       vector <VarDecAST*>  ExtDecList;        //外部、局部变量列表
+       TypeAST     *Specifier;
+       VarDecAST *VarDec;
+       CompStmAST  *CompSt;
 	vector <ParamAST *>  ParamList;         //形参列表
 	ParamAST *ParamDec;
 
@@ -97,15 +96,15 @@ typedef struct YYLVAL
 	StmAST      *Stmt;
 	vector <DefAST *>   DefList;
 	DefAST      *Def;
-    vector <VarDecAST *> DecList;
-    VarDecAST   *Dec;
-    ExpAST      *Exp;
+       vector <VarDecAST *> DecList;
+       VarDecAST   *Dec;
+       ExpAST      *Exp;
 	vector <ExpAST *>    Args;       	//实参列表
 }YYLVAL;
 #define YYSTYPE YYLVAL
 
 
-#line 109 "parser.tab.cpp"
+#line 108 "parser.tab.cpp"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -618,13 +617,13 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    91,    91,   101,   102,   105,   109,   110,   112,   120,
-     121,   123,   124,   127,   128,   129,   131,   134,   136,   137,
-     139,   140,   142,   146,   147,   149,   150,   151,   153,   154,
-     155,   159,   160,   161,   162,   163,   164,   165,   166,   169,
-     172,   173,   174,   175,   176,   177,   178,   180,   181,   182,
-     184,   185,   186,   187,   188,   189,   192,   195,   196,   197,
-     198,   201,   202,   203
+       0,    90,    90,   100,   101,   104,   108,   109,   111,   119,
+     120,   122,   123,   126,   127,   128,   130,   133,   135,   136,
+     138,   139,   141,   144,   145,   147,   148,   149,   151,   152,
+     153,   157,   158,   159,   160,   161,   162,   163,   164,   167,
+     170,   171,   172,   173,   174,   175,   176,   178,   179,   180,
+     182,   183,   184,   185,   186,   187,   190,   193,   194,   195,
+     196,   199,   200,   201
 };
 #endif
 
@@ -1684,393 +1683,392 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: ExtDefList  */
-#line 91 "parser.ypp"
+#line 90 "parser.ypp"
                      {(yyval.program)=new ProgAST(); (yyval.program)->ExtDefs=(yyvsp[0].ExtDefList);
-                      if (Errors::IsEmpty()&&  ErrorCharNum==0)
-                           { (yyval.program)->DisplayAST(0);}    //无词法、语法错误显示语法树
+                      if (Errors::IsEmpty() && ErrorCharNum==0)
+                           { (yyval.program)->DisplayAST(0); }         //无词法、语法错误显示语法树
                       else {Errors::ErrorsDisplay();return 0;}
                       (yyval.program)->Semantics0();                   //静态语义检查
                       if (Errors::IsEmpty())
                           (yyval.program)->GenIR();                    //中间代码生成
                       system("pause");
                       }
-#line 1698 "parser.tab.cpp"
+#line 1697 "parser.tab.cpp"
     break;
 
   case 3: /* ExtDefList: %empty  */
-#line 101 "parser.ypp"
+#line 100 "parser.ypp"
             {(yyval.ExtDefList)=vector <ExtDefAST*>();}
-#line 1704 "parser.tab.cpp"
+#line 1703 "parser.tab.cpp"
     break;
 
   case 4: /* ExtDefList: ExtDef ExtDefList  */
-#line 102 "parser.ypp"
+#line 101 "parser.ypp"
                               {(yyvsp[0].ExtDefList).insert((yyvsp[0].ExtDefList).begin(),(yyvsp[-1].ExtDef));(yyval.ExtDefList)=(yyvsp[0].ExtDefList);}
-#line 1710 "parser.tab.cpp"
+#line 1709 "parser.tab.cpp"
     break;
 
   case 5: /* ExtDef: Specifier ExtDecList SEMI  */
-#line 105 "parser.ypp"
+#line 104 "parser.ypp"
                                       { ExtVarDefAST *t=new ExtVarDefAST();     //创建一个外部变量声明的对象
-                                        t->Type=(yyvsp[-2].Specifier); t->ExtVars=(yyvsp[-1].ExtDecList);(yyval.ExtDef)=t;SavePosition;}
-#line 1717 "parser.tab.cpp"
+                                        t->Type=(yyvsp[-2].Specifier); t->ExtVars=(yyvsp[-1].ExtDecList); (yyval.ExtDef)=t; SavePosition;}
+#line 1716 "parser.tab.cpp"
     break;
 
   case 6: /* ExtDef: Specifier ID LP ParamList RP CompSt  */
-#line 109 "parser.ypp"
-                                                {FuncDefAST *t=new FuncDefAST();t->Type=(yyvsp[-5].Specifier);t->Name=(yyvsp[-4].type_id);t->Params=(yyvsp[-2].ParamList); t->Body=(yyvsp[0].CompSt);(yyval.ExtDef)=t;SavePosition;}
-#line 1723 "parser.tab.cpp"
+#line 108 "parser.ypp"
+                                               {FuncDefAST *t=new FuncDefAST();t->Type=(yyvsp[-5].Specifier);t->Name=(yyvsp[-4].type_id);t->Params=(yyvsp[-2].ParamList); t->Body=(yyvsp[0].CompSt);(yyval.ExtDef)=t;SavePosition;}
+#line 1722 "parser.tab.cpp"
     break;
 
   case 7: /* ExtDef: Specifier ID LP ParamList RP SEMI  */
-#line 110 "parser.ypp"
+#line 109 "parser.ypp"
                                                {FuncDefAST *t=new FuncDefAST();t->Type=(yyvsp[-5].Specifier);t->Name=(yyvsp[-4].type_id);t->Params=(yyvsp[-2].ParamList);(yyval.ExtDef)=t;SavePosition;}
-#line 1729 "parser.tab.cpp"
+#line 1728 "parser.tab.cpp"
     break;
 
   case 8: /* Specifier: TYPE  */
-#line 112 "parser.ypp"
+#line 111 "parser.ypp"
                  {  BasicTypeAST *t=new BasicTypeAST(); ;
                     if (string((yyvsp[0].type_id))==string("int"))    t->Type=T_INT;
                     if (string((yyvsp[0].type_id))==string("float"))  t->Type=T_FLOAT;
                     if (string((yyvsp[0].type_id))==string("void"))   t->Type=T_VOID;  (yyval.Specifier)=t;SavePosition;}
-#line 1738 "parser.tab.cpp"
+#line 1737 "parser.tab.cpp"
     break;
 
   case 9: /* ExtDecList: VarDec  */
-#line 120 "parser.ypp"
+#line 119 "parser.ypp"
                      {(yyval.ExtDecList)=vector < VarDecAST*>();(yyval.ExtDecList).push_back((yyvsp[0].VarDec));}
-#line 1744 "parser.tab.cpp"
+#line 1743 "parser.tab.cpp"
     break;
 
   case 10: /* ExtDecList: VarDec COMMA ExtDecList  */
-#line 121 "parser.ypp"
+#line 120 "parser.ypp"
                                      {(yyvsp[0].ExtDecList).insert((yyvsp[0].ExtDecList).begin(),(yyvsp[-2].VarDec));(yyval.ExtDecList)=(yyvsp[0].ExtDecList);}
-#line 1750 "parser.tab.cpp"
+#line 1749 "parser.tab.cpp"
     break;
 
   case 11: /* VarDec: ID  */
-#line 123 "parser.ypp"
-              {(yyval.VarDec)=new VarDecAST();(yyval.VarDec)->Name=string((yyvsp[0].type_id));(yyval.VarDec)->Line=yylloc.first_line;(yyval.VarDec)->Column=yylloc.first_column;}
-#line 1756 "parser.tab.cpp"
+#line 122 "parser.ypp"
+              {VarDecAST *t=new VarDecAST(); t->Name=string((yyvsp[0].type_id)); (yyval.VarDec)=t; SavePosition;}
+#line 1755 "parser.tab.cpp"
     break;
 
   case 12: /* VarDec: VarDec LB INT RB  */
-#line 124 "parser.ypp"
+#line 123 "parser.ypp"
                                {(yyvsp[-3].VarDec)->Dims.push_back((yyvsp[-1].type_int));(yyval.VarDec)=(yyvsp[-3].VarDec);}
-#line 1762 "parser.tab.cpp"
+#line 1761 "parser.tab.cpp"
     break;
 
   case 13: /* ParamList: %empty  */
-#line 127 "parser.ypp"
+#line 126 "parser.ypp"
            {(yyval.ParamList)=vector < ParamAST *>();}
-#line 1768 "parser.tab.cpp"
+#line 1767 "parser.tab.cpp"
     break;
 
   case 14: /* ParamList: ParamDec  */
-#line 128 "parser.ypp"
+#line 127 "parser.ypp"
                     {(yyval.ParamList)=vector < ParamAST *>(); (yyval.ParamList).push_back((yyvsp[0].ParamDec)); }
-#line 1774 "parser.tab.cpp"
+#line 1773 "parser.tab.cpp"
     break;
 
   case 15: /* ParamList: ParamList COMMA ParamDec  */
-#line 129 "parser.ypp"
+#line 128 "parser.ypp"
                                      {(yyvsp[-2].ParamList).push_back((yyvsp[0].ParamDec)); (yyval.ParamList)=(yyvsp[-2].ParamList);}
-#line 1780 "parser.tab.cpp"
+#line 1779 "parser.tab.cpp"
     break;
 
   case 16: /* ParamDec: Specifier VarDec  */
-#line 131 "parser.ypp"
-                                   {(yyval.ParamDec)=new ParamAST();(yyval.ParamDec)->Type=(yyvsp[-1].Specifier);(yyval.ParamDec)->ParamName=(yyvsp[0].VarDec);(yyval.ParamDec)->Line=yylloc.first_line;(yyval.ParamDec)->Column=yylloc.first_column;}
-#line 1786 "parser.tab.cpp"
+#line 130 "parser.ypp"
+                                   {ParamAST* t=new ParamAST();t->Type=(yyvsp[-1].Specifier);t->ParamName=(yyvsp[0].VarDec); (yyval.ParamDec)=t; SavePosition;}
+#line 1785 "parser.tab.cpp"
     break;
 
   case 17: /* CompSt: LC DefList StmList RC  */
-#line 134 "parser.ypp"
-                                 {(yyval.CompSt)=new CompStmAST();(yyval.CompSt)->Decls=(yyvsp[-2].DefList);(yyval.CompSt)->Stms=(yyvsp[-1].StmList);(yyval.CompSt)->Line=yylloc.first_line;(yyval.CompSt)->Column=yylloc.first_column;}
-#line 1792 "parser.tab.cpp"
+#line 133 "parser.ypp"
+                                 {CompStmAST *t=new CompStmAST();t->Decls=(yyvsp[-2].DefList);t->Stms=(yyvsp[-1].StmList);(yyval.CompSt)=t;SavePosition;}
+#line 1791 "parser.tab.cpp"
     break;
 
   case 18: /* StmList: %empty  */
-#line 136 "parser.ypp"
+#line 135 "parser.ypp"
          {(yyval.StmList)=vector <StmAST *>(); }
-#line 1798 "parser.tab.cpp"
+#line 1797 "parser.tab.cpp"
     break;
 
   case 19: /* StmList: Stmt StmList  */
-#line 137 "parser.ypp"
+#line 136 "parser.ypp"
                         {(yyval.StmList)=(yyvsp[0].StmList);(yyval.StmList).insert((yyval.StmList).begin(),(yyvsp[-1].Stmt));}
-#line 1804 "parser.tab.cpp"
+#line 1803 "parser.tab.cpp"
     break;
 
   case 20: /* DefList: %empty  */
-#line 139 "parser.ypp"
+#line 138 "parser.ypp"
          {(yyval.DefList)=vector <DefAST *>();  }
-#line 1810 "parser.tab.cpp"
+#line 1809 "parser.tab.cpp"
     break;
 
   case 21: /* DefList: Def DefList  */
-#line 140 "parser.ypp"
+#line 139 "parser.ypp"
                       {(yyval.DefList)=(yyvsp[0].DefList);(yyval.DefList).insert((yyval.DefList).begin(),(yyvsp[-1].Def));}
-#line 1816 "parser.tab.cpp"
+#line 1815 "parser.tab.cpp"
     break;
 
   case 22: /* Def: Specifier DecList SEMI  */
-#line 142 "parser.ypp"
-                              {(yyval.Def)=new DefAST();(yyval.Def)->Type=(yyvsp[-2].Specifier);(yyval.Def)->LocVars=(yyvsp[-1].DecList);
-                               (yyval.Def)->Line=yylloc.first_line;(yyval.Def)->Column=yylloc.first_column;}
-#line 1823 "parser.tab.cpp"
+#line 141 "parser.ypp"
+                              {DefAST *t=new DefAST();t->Type=(yyvsp[-2].Specifier);t->LocVars=(yyvsp[-1].DecList);(yyval.Def)=t;SavePosition;}
+#line 1821 "parser.tab.cpp"
     break;
 
   case 23: /* DecList: Dec  */
-#line 146 "parser.ypp"
+#line 144 "parser.ypp"
               {(yyval.DecList)=vector <VarDecAST *>(); (yyval.DecList).push_back((yyvsp[0].Dec));}
-#line 1829 "parser.tab.cpp"
+#line 1827 "parser.tab.cpp"
     break;
 
   case 24: /* DecList: Dec COMMA DecList  */
-#line 147 "parser.ypp"
+#line 145 "parser.ypp"
                             {(yyval.DecList)=(yyvsp[0].DecList);(yyval.DecList).insert((yyval.DecList).begin(),(yyvsp[-2].Dec));}
-#line 1835 "parser.tab.cpp"
+#line 1833 "parser.tab.cpp"
     break;
 
   case 25: /* Dec: VarDec  */
-#line 149 "parser.ypp"
+#line 147 "parser.ypp"
               {(yyval.Dec)=(yyvsp[0].VarDec);}
-#line 1841 "parser.tab.cpp"
+#line 1839 "parser.tab.cpp"
     break;
 
   case 26: /* Dec: VarDec ASSIGN Exp  */
-#line 150 "parser.ypp"
+#line 148 "parser.ypp"
                             {(yyval.Dec)=(yyvsp[-2].VarDec);(yyval.Dec)->Exp=(yyvsp[0].Exp); }
-#line 1847 "parser.tab.cpp"
+#line 1845 "parser.tab.cpp"
     break;
 
   case 27: /* Dec: VarDec ASSIGN LC ArrExp RC  */
-#line 151 "parser.ypp"
+#line 149 "parser.ypp"
                                         {}
-#line 1853 "parser.tab.cpp"
+#line 1851 "parser.tab.cpp"
     break;
 
   case 28: /* ArrExp: Exp  */
-#line 153 "parser.ypp"
+#line 151 "parser.ypp"
                                      {}
-#line 1859 "parser.tab.cpp"
+#line 1857 "parser.tab.cpp"
     break;
 
   case 29: /* ArrExp: LC ArrExp RC  */
-#line 154 "parser.ypp"
+#line 152 "parser.ypp"
                                      {}
-#line 1865 "parser.tab.cpp"
+#line 1863 "parser.tab.cpp"
     break;
 
   case 30: /* ArrExp: ArrExp COMMA ArrExp  */
-#line 155 "parser.ypp"
+#line 153 "parser.ypp"
                                      {}
-#line 1871 "parser.tab.cpp"
+#line 1869 "parser.tab.cpp"
     break;
 
   case 31: /* Stmt: Exp SEMI  */
-#line 159 "parser.ypp"
+#line 157 "parser.ypp"
                                 {ExprStmAST *t=new ExprStmAST();t->Exp=(yyvsp[-1].Exp);(yyval.Stmt)=t;SavePosition;}
-#line 1877 "parser.tab.cpp"
+#line 1875 "parser.tab.cpp"
     break;
 
   case 32: /* Stmt: CompSt  */
-#line 160 "parser.ypp"
+#line 158 "parser.ypp"
                                 {(yyval.Stmt)=(yyvsp[0].CompSt);}
-#line 1883 "parser.tab.cpp"
+#line 1881 "parser.tab.cpp"
     break;
 
   case 33: /* Stmt: RETURN Exp SEMI  */
-#line 161 "parser.ypp"
+#line 159 "parser.ypp"
                                 {ReturnStmAST *t=new ReturnStmAST();t->Exp=(yyvsp[-1].Exp);(yyval.Stmt)=t;SavePosition;}
-#line 1889 "parser.tab.cpp"
+#line 1887 "parser.tab.cpp"
     break;
 
   case 34: /* Stmt: RETURN SEMI  */
-#line 162 "parser.ypp"
+#line 160 "parser.ypp"
                             {ReturnStmAST *t=new ReturnStmAST();t->Exp=NULL;(yyval.Stmt)=t;SavePosition;}
-#line 1895 "parser.tab.cpp"
+#line 1893 "parser.tab.cpp"
     break;
 
   case 35: /* Stmt: IF LP Exp RP Stmt  */
-#line 163 "parser.ypp"
+#line 161 "parser.ypp"
                                                 {IfStmAST *t=new IfStmAST();t->Cond=(yyvsp[-2].Exp);t->ThenStm=(yyvsp[0].Stmt);(yyval.Stmt)=t; SavePosition;}
-#line 1901 "parser.tab.cpp"
+#line 1899 "parser.tab.cpp"
     break;
 
   case 36: /* Stmt: IF LP Exp RP Stmt ELSE Stmt  */
-#line 164 "parser.ypp"
+#line 162 "parser.ypp"
                                                     {IfElseStmAST *t=new IfElseStmAST();t->Cond=(yyvsp[-4].Exp);t->ThenStm=(yyvsp[-2].Stmt);t->ElseStm=(yyvsp[0].Stmt);(yyval.Stmt)=t;SavePosition;}
-#line 1907 "parser.tab.cpp"
+#line 1905 "parser.tab.cpp"
     break;
 
   case 37: /* Stmt: WHILE LP Exp RP Stmt  */
-#line 165 "parser.ypp"
+#line 163 "parser.ypp"
                                 {WhileStmAST *t=new WhileStmAST();t->Cond=(yyvsp[-2].Exp);t->Body=(yyvsp[0].Stmt);(yyval.Stmt)=t; SavePosition;}
-#line 1913 "parser.tab.cpp"
+#line 1911 "parser.tab.cpp"
     break;
 
   case 38: /* Stmt: error SEMI  */
-#line 166 "parser.ypp"
+#line 164 "parser.ypp"
                      {(yyval.Stmt)=NULL;}
-#line 1919 "parser.tab.cpp"
+#line 1917 "parser.tab.cpp"
     break;
 
   case 39: /* Exp: Exp ASSIGN Exp  */
-#line 169 "parser.ypp"
+#line 167 "parser.ypp"
                        {AssignAST *t=new AssignAST();t->Op=ASSIGN;
                 t->LeftValExp=(yyvsp[-2].Exp);t->RightValExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1926 "parser.tab.cpp"
+#line 1924 "parser.tab.cpp"
     break;
 
   case 40: /* Exp: Exp PLUS Exp  */
-#line 172 "parser.ypp"
+#line 170 "parser.ypp"
                      {BinaryExprAST *t=new BinaryExprAST();t->Op=PLUS;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1932 "parser.tab.cpp"
+#line 1930 "parser.tab.cpp"
     break;
 
   case 41: /* Exp: Exp MINUS Exp  */
-#line 173 "parser.ypp"
+#line 171 "parser.ypp"
                      {BinaryExprAST *t=new BinaryExprAST();t->Op=MINUS;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1938 "parser.tab.cpp"
+#line 1936 "parser.tab.cpp"
     break;
 
   case 42: /* Exp: Exp STAR Exp  */
-#line 174 "parser.ypp"
+#line 172 "parser.ypp"
                      {BinaryExprAST *t=new BinaryExprAST();t->Op=STAR;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1944 "parser.tab.cpp"
+#line 1942 "parser.tab.cpp"
     break;
 
   case 43: /* Exp: Exp DIV Exp  */
-#line 175 "parser.ypp"
+#line 173 "parser.ypp"
                      {BinaryExprAST *t=new BinaryExprAST();t->Op=DIV;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1950 "parser.tab.cpp"
+#line 1948 "parser.tab.cpp"
     break;
 
   case 44: /* Exp: LP Exp RP  */
-#line 176 "parser.ypp"
+#line 174 "parser.ypp"
                      {(yyval.Exp)=(yyvsp[-1].Exp);}
-#line 1956 "parser.tab.cpp"
+#line 1954 "parser.tab.cpp"
     break;
 
   case 45: /* Exp: MINUS Exp  */
-#line 177 "parser.ypp"
+#line 175 "parser.ypp"
                                 {UnaryExprAST *t=new UnaryExprAST();t->Op=UMINUS;t->Exp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1962 "parser.tab.cpp"
+#line 1960 "parser.tab.cpp"
     break;
 
   case 46: /* Exp: PLUS Exp  */
-#line 178 "parser.ypp"
+#line 176 "parser.ypp"
                                 {UnaryExprAST *t=new UnaryExprAST();t->Op=UPLUS;t->Exp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1968 "parser.tab.cpp"
+#line 1966 "parser.tab.cpp"
     break;
 
   case 47: /* Exp: Exp AND Exp  */
-#line 180 "parser.ypp"
+#line 178 "parser.ypp"
                       {BinaryExprAST *t=new BinaryExprAST();t->Op=AND;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1974 "parser.tab.cpp"
+#line 1972 "parser.tab.cpp"
     break;
 
   case 48: /* Exp: Exp OR Exp  */
-#line 181 "parser.ypp"
+#line 179 "parser.ypp"
                       {BinaryExprAST *t=new BinaryExprAST();t->Op=OR;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1980 "parser.tab.cpp"
+#line 1978 "parser.tab.cpp"
     break;
 
   case 49: /* Exp: NOT Exp  */
-#line 182 "parser.ypp"
+#line 180 "parser.ypp"
                       {UnaryExprAST *t=new UnaryExprAST();t->Op=NOT;t->Exp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1986 "parser.tab.cpp"
+#line 1984 "parser.tab.cpp"
     break;
 
   case 50: /* Exp: Exp GT Exp  */
-#line 184 "parser.ypp"
+#line 182 "parser.ypp"
                         {BinaryExprAST *t=new BinaryExprAST();t->Op=GT;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1992 "parser.tab.cpp"
+#line 1990 "parser.tab.cpp"
     break;
 
   case 51: /* Exp: Exp GE Exp  */
-#line 185 "parser.ypp"
+#line 183 "parser.ypp"
                         {BinaryExprAST *t=new BinaryExprAST();t->Op=GE;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 1998 "parser.tab.cpp"
+#line 1996 "parser.tab.cpp"
     break;
 
   case 52: /* Exp: Exp LT Exp  */
-#line 186 "parser.ypp"
+#line 184 "parser.ypp"
                         {BinaryExprAST *t=new BinaryExprAST();t->Op=LT;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 2004 "parser.tab.cpp"
+#line 2002 "parser.tab.cpp"
     break;
 
   case 53: /* Exp: Exp LE Exp  */
-#line 187 "parser.ypp"
+#line 185 "parser.ypp"
                         {BinaryExprAST *t=new BinaryExprAST();t->Op=LE;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 2010 "parser.tab.cpp"
+#line 2008 "parser.tab.cpp"
     break;
 
   case 54: /* Exp: Exp NE Exp  */
-#line 188 "parser.ypp"
+#line 186 "parser.ypp"
                         {BinaryExprAST *t=new BinaryExprAST();t->Op=NE;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 2016 "parser.tab.cpp"
+#line 2014 "parser.tab.cpp"
     break;
 
   case 55: /* Exp: Exp EQ Exp  */
-#line 189 "parser.ypp"
+#line 187 "parser.ypp"
                         {BinaryExprAST *t=new BinaryExprAST();t->Op=EQ;t->LeftExp=(yyvsp[-2].Exp);t->RightExp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 2022 "parser.tab.cpp"
+#line 2020 "parser.tab.cpp"
     break;
 
   case 56: /* Exp: DPLUS Exp  */
-#line 192 "parser.ypp"
+#line 190 "parser.ypp"
                         {UnaryExprAST *t=new UnaryExprAST();t->Op=DPLUS;t->Exp=(yyvsp[0].Exp);(yyval.Exp)=t;SavePosition;}
-#line 2028 "parser.tab.cpp"
+#line 2026 "parser.tab.cpp"
     break;
 
   case 57: /* Exp: ID LP Args RP  */
-#line 195 "parser.ypp"
+#line 193 "parser.ypp"
                         {FuncCallAST *t=new FuncCallAST();t->Name=(yyvsp[-3].type_id);t->Params=(yyvsp[-1].Args);(yyval.Exp)=t;SavePosition;}
-#line 2034 "parser.tab.cpp"
+#line 2032 "parser.tab.cpp"
     break;
 
   case 58: /* Exp: ID  */
-#line 196 "parser.ypp"
+#line 194 "parser.ypp"
                         {VarAST *t=new VarAST();t->Name=(yyvsp[0].type_id);(yyval.Exp)=t;SavePosition;}
-#line 2040 "parser.tab.cpp"
+#line 2038 "parser.tab.cpp"
     break;
 
   case 59: /* Exp: INT  */
-#line 197 "parser.ypp"
+#line 195 "parser.ypp"
                         {ConstAST *t=new ConstAST();t->Type=T_INT;t->ConstVal.constINT=(yyvsp[0].type_int);(yyval.Exp)=t;SavePosition;}
-#line 2046 "parser.tab.cpp"
+#line 2044 "parser.tab.cpp"
     break;
 
   case 60: /* Exp: FLOAT  */
-#line 198 "parser.ypp"
+#line 196 "parser.ypp"
                         {ConstAST *t=new ConstAST();t->Type=T_FLOAT;t->ConstVal.constFLOAT=(yyvsp[0].type_float);(yyval.Exp)=t;SavePosition;}
-#line 2052 "parser.tab.cpp"
+#line 2050 "parser.tab.cpp"
     break;
 
   case 61: /* Args: %empty  */
-#line 201 "parser.ypp"
+#line 199 "parser.ypp"
         {}
-#line 2058 "parser.tab.cpp"
+#line 2056 "parser.tab.cpp"
     break;
 
   case 62: /* Args: Exp  */
-#line 202 "parser.ypp"
+#line 200 "parser.ypp"
               {(yyval.Args)=vector <ExpAST *>(); (yyval.Args).push_back((yyvsp[0].Exp)); }
-#line 2064 "parser.tab.cpp"
+#line 2062 "parser.tab.cpp"
     break;
 
   case 63: /* Args: Args COMMA Exp  */
-#line 203 "parser.ypp"
+#line 201 "parser.ypp"
                             {(yyval.Args)=(yyvsp[-2].Args);(yyval.Args).push_back((yyvsp[0].Exp));}
-#line 2070 "parser.tab.cpp"
+#line 2068 "parser.tab.cpp"
     break;
 
 
-#line 2074 "parser.tab.cpp"
+#line 2072 "parser.tab.cpp"
 
       default: break;
     }
@@ -2299,7 +2297,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 206 "parser.ypp"
+#line 204 "parser.ypp"
 
 
 int main(int argc, char *argv[]){
