@@ -1,4 +1,4 @@
-# houC
+# tzlC
 
 ## How to Run?
 
@@ -185,9 +185,9 @@ class Errors //用来记录语法、语义错误
 
 ```
 
+***2023.1.11*** Read Code.
 
-
-加入
+***2023.1.13*** 加入如下内容
 
 **行注释与块注释** √
 
@@ -206,3 +206,17 @@ class Errors //用来记录语法、语义错误
 **数组**
 
 **静态分析中的错误处理**  9/16
+
+
+----------------------------------
+
+
+by ***HUSTZL***, School of Software Engineering, Huazhong University of Technology and Science, Wuhan, China.
+
+Team Leader: Haofei Hou.
+
+Team member: Mingchen Liu, Fengxuan Gan.
+
+Contact: yuechuhaoxi020609@outlook.com
+
+2023.1.13
