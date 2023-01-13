@@ -1736,7 +1736,7 @@ yyreduce:
                       (yyval.program)->Semantics0();                   //静态语义检查
                       if (Errors::IsEmpty())
                           (yyval.program)->GenIR();                    //中间代码生成
-                      system("pause");
+                      exit(0);
                       }
 #line 1742 "parser.tab.cpp"
     break;
