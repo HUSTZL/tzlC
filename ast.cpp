@@ -184,6 +184,18 @@ void ForStmAST::DisplayAST(int indent)
     Body->DisplayAST(indent+8);
 }
 
+void BreakStmAST::DisplayAST(int indent)
+{
+    space(indent);
+    cout<<"break语句"<<endl;
+}
+
+void ContinueStmAST::DisplayAST(int indent)
+{
+    space(indent);
+    cout<<"continue语句"<<endl;
+}
+
 void ReturnStmAST::DisplayAST(int indent)
 {   //显示返回语句
     space(indent);

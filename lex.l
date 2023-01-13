@@ -38,6 +38,8 @@ Multiline_comment	"/*"([^\*]|(\*)*[^\*/])*(\*)*"*/"
 "while"     {return WHILE;}
 "for"       {return FOR;}
 
+"break"		{return BREAK;}
+"continue"	{return CONTINUE;}
 
 {id}	{strcpy(yylval.type_id,yytext); return ID;}
 ";"	    {return SEMI;}

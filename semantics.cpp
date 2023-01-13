@@ -171,7 +171,7 @@ void FuncDefAST::Semantics(int &Offset)
 {
     if (!SymbolStack.LocateNameCurrent(Name))  //当前作用域未定义，将变量加入符号表
     {
-        int Offset=12;           //局部变量偏移量初始化,预留12个字节存放返回地址等信息，可根据实际情况修改
+        int Offset=12;            //局部变量偏移量初始化,预留12个字节存放返回地址等信息，可根据实际情况修改
         MaxVarSize=12;            //计算函数变量需要的最大容量
         FuncDefPtr=new FuncSymbol();
         FuncDefPtr->Name=Name;
@@ -189,7 +189,7 @@ void FuncDefAST::Semantics(int &Offset)
         Body->LocalSymbolTable=Local;
         for(auto a:Params)
             a->Semantics(Offset);              //未考虑参数用寄存器，只是简单在AR中分配单元
-        Body->Semantics(Offset);               //对函数中的变量，在AR中接在参数后分配单元
+        Body->Semantics(Offset, 0, 0);               //对函数中的变量，在AR中接在参数后分配单元
         FuncDefPtr->ARSize=MaxVarSize; //函数变量需要空间大小（未考虑临时变量），后续再加临时变量单元得到AR大小
     }
     else Errors::ErrorAdd(Line,Column,"函数 "+Name+" 重复定义");
@@ -212,7 +212,7 @@ void ParamAST::Semantics(int &Offset)
 }
 
 /**************语句显示******************************/
-void CompStmAST::Semantics(int &Offset)
+void CompStmAST::Semantics(int &Offset, int canBreak, int canContinue)
 {
     if (!LocalSymbolTable)          //如果不是函数体的复合语句，需自行生成局部符号表
     {
@@ -226,7 +226,7 @@ void CompStmAST::Semantics(int &Offset)
     for(auto a:Stms)
     {
         int Offset_S=Offset;      //前后并列语句可以使用同一片单元，所以取最大值，这里保存起始偏移量
-        a->Semantics(Offset);
+        a->Semantics(Offset, canBreak, canContinue);
         if (Offset>MaxVarSize) MaxVarSize=Offset;
         Offset=Offset_S;
     }
@@ -236,36 +236,46 @@ void CompStmAST::Semantics(int &Offset)
     SymbolStack.Symbols.pop_back();     //复合语句的符号表退栈
 }
 
-void ExprStmAST::Semantics(int &Offset)
+void ExprStmAST::Semantics(int &Offset, int canBreak, int canContinue)
 {
     Exp->Semantics(Offset);
 }
-void IfStmAST::Semantics(int &Offset)
+void IfStmAST::Semantics(int &Offset, int canBreak, int canContinue)
 {
     Cond->Semantics(Offset);
-    ThenStm->Semantics(Offset);
+    ThenStm->Semantics(Offset, canBreak, canContinue);
 }
-void IfElseStmAST::Semantics(int &Offset)
+void IfElseStmAST::Semantics(int &Offset, int canBreak, int canContinue)
 {
     Cond->Semantics(Offset);
-    ThenStm->Semantics(Offset);
-    ElseStm->Semantics(Offset);
+    ThenStm->Semantics(Offset, canBreak, canContinue);
+    ElseStm->Semantics(Offset, canBreak, canContinue);
 }
-void WhileStmAST::Semantics(int &Offset)
+void WhileStmAST::Semantics(int &Offset, int canBreak, int canContinue)
 {
     Cond->Semantics(Offset);
-    Body->Semantics(Offset);
+    Body->Semantics(Offset, 1, 1);
 }
-void ForStmAST::Semantics(int &Offset)
+void ForStmAST::Semantics(int &Offset, int canBreak, int canContinue)
 {
     SinExp->Semantics(Offset);
     Cond->Semantics(Offset);
     EndExp->Semantics(Offset);
-    Body->Semantics(Offset);
+    Body->Semantics(Offset, 1, 1);
 }
-void ReturnStmAST::Semantics(int &Offset)
+void ReturnStmAST::Semantics(int &Offset, int canBreak, int canContinue)
 {
     if (Exp) Exp->Semantics(Offset);
+}
+void BreakStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+{
+    if(canBreak == 0)
+        Errors::ErrorAdd(Line,Column,"break语句不在循环语句或switch语句中");
+}
+void ContinueStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+{
+    if(canContinue == 0)
+        Errors::ErrorAdd(Line,Column,"continue语句不在循环语句中");
 }
 
 
@@ -275,7 +285,11 @@ void VarAST::Semantics(int &Offset)
     if (VarRef=(VarSymbol *)SymbolStack.LocateNameGlobal(Name))
     {
         //如果是函数名，报错，
+        if(VarRef->Kind=='F')
+            Errors::ErrorAdd(Line,Column,"对函数名采用非函数调用形式访问 ") ;
         //简单变量则提取变量类型属性
+        else 
+            Type=VarRef->Type;
     }
     else Errors::ErrorAdd(Line,Column,"引用未定义的符号 "+Name) ;
 
@@ -298,12 +312,21 @@ void BinaryExprAST::Semantics(int &Offset)
 {
     LeftExp->Semantics(Offset);
     RightExp->Semantics(Offset);
+    if(LeftExp->Type == T_VOID || RightExp->Type == T_VOID)
+        Errors::ErrorAdd(Line,Column,"弱类型语言里void类型不允许计算");
+    if(LeftExp->Type == T_FLOAT || RightExp->Type == T_FLOAT)
+        Type=T_FLOAT;
+    else if(LeftExp->Type == T_INT || RightExp->Type == T_INT)
+        Type=T_INT;
+    else if(LeftExp->Type == T_CHAR && RightExp->Type == T_CHAR)
+        Type=T_CHAR;
     //根据左右值类型，判断是否能进行运算，并确定运算结果类型
 }
 
 void UnaryExprAST::Semantics(int &Offset)
 {
     Exp->Semantics(Offset);
+    Type=Exp->Type;
 }
 
 void FuncCallAST::Semantics(int &Offset)
@@ -311,10 +334,18 @@ void FuncCallAST::Semantics(int &Offset)
 
     if (FuncRef=(FuncSymbol *)SymbolStack.LocateNameGlobal(Name))
     {
+        if(FuncRef->ParamNum!=Params.size())
+            Errors::ErrorAdd(Line,Column,"实参表达式个数和形参不一致 "+Name);
+        SymbolsInAScope *ParamPtr=FuncRef->ParamPtr;int i=0;
         for(auto a:Params)
         {
-            //检查实参表达式个数和形参数是否一致，类型是否一致
             a->Semantics(Offset);
+            //检查实参表达式个数和形参数是否一致，类型是否一致
+            if (Name!=string("write")) {
+                VarSymbol *Sym=(VarSymbol*)((ParamPtr->Symbols).at(i++));
+                if(Sym->Type != a->Type)
+                    Errors::ErrorAdd(Line,Column,"实参表达式类型和形参不一致 "); 
+            }   
         }
     }
     else Errors::ErrorAdd(Line,Column,"引用未定义的函数 "+Name);
