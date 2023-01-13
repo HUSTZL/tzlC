@@ -7,13 +7,13 @@ int fibo (int a) { // compute the Fibonacci sequence recursively
 int main () {
     /*
         cycling of /*****comput**ing*/
-    int m, n, i;
+    int m, n, i, t;
     m=read();
     i = 1;
     while (i<m) {
         n=fibo(i);
         write (n);
-        i=i+1;
+        write(i++);
     }
     return 1;
 }

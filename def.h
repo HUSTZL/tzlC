@@ -363,7 +363,7 @@ class BinaryExprAST :public ExpAST{   //二元运算符
         void GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)override;
 };
 
-class UnaryExprAST :public ExpAST{   //二元运算符
+class UnaryExprAST :public ExpAST{   //单目运算符
     public:
         int     Op;
         ExpAST  *Exp;

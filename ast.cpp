@@ -12,7 +12,7 @@ void space(int indent)
 }
 map <int,string> SymbolMap={{T_CHAR,"char"},{T_INT,"int"},{T_FLOAT,"float"},{T_VOID,"void"},{GT,">"},{GE,">="},{LT,"<"},
                              {LE,"<="},{EQ,"=="},{NE,"!="},{PLUS,"+"},{MINUS,"-"},{UPLUS,"*"},{UMINUS,"/"},{ASSIGN,"="},
-                             {AND,"&&"},{OR,"||"},{NOT,"!"}};
+                             {AND,"&&"},{OR,"||"},{NOT,"!"},{DPLUS,"++N"},{DMINUS, "--N"},{PLUSD,"N++"},{MINUSD, "N--"}};
 void ProgAST::DisplayAST(int indent)
 { //依次显示向量ExtDefs中的各个外部定义(外部变量定义和函数定义)
     for(auto a:ExtDefs)

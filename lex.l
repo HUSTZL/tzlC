@@ -50,6 +50,7 @@ Multiline_comment	"/*"([^\*]|(\*)*[^\*/])*(\*)*"*/"
 "=="	{strcpy(yylval.type_id, yytext);return EQ;}
 "="	    {return ASSIGN;}
 "++"	{return DPLUS;}
+"--"	{return DMINUS;}
 "+"	    {return PLUS;}
 "-"	    {return MINUS;}
 "*"	    {return STAR;}

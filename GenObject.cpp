@@ -57,6 +57,25 @@ void GenObject(list <IRCode> IRCodes)
                  ObjectFile<< "  sw $t3, "<<it->Result.Offset<<"($sp)"<<endl;
                  break;
 
+            case DPLUS:
+            case DMINUS:
+                 ObjectFile<< "  lw $t1, "<<it->Opn1.Offset<<"($sp)"<<endl;
+                 if (it->Op==DPLUS)       ObjectFile<< "  addi $t3,$t1,1"<<endl;
+                 else if (it->Op==DMINUS) ObjectFile<< "  addi $t3,$t1,-1"<<endl;
+                 ObjectFile<< "  sw $t3, "<<it->Opn1.Offset<<"($sp)"<<endl;
+                 ObjectFile<< "  sw $t3, "<<it->Result.Offset<<"($sp)"<<endl;
+                 break;
+
+            case PLUSD:
+            case MINUSD:
+                 ObjectFile<< "  lw $t1, "<<it->Opn1.Offset<<"($sp)"<<endl;
+                 ObjectFile<< "  sw $t1, "<<it->Result.Offset<<"($sp)"<<endl;
+                 if (it->Op==PLUSD)       ObjectFile<< "  addi $t3,$t1,1"<<endl;
+                 else if (it->Op==MINUSD) ObjectFile<< "  addi $t3,$t1,-1"<<endl;
+                 ObjectFile<< "  sw $t3, "<<it->Opn1.Offset<<"($sp)"<<endl;
+                 break;
+
+
             case RETURN:
                 ObjectFile<< "  lw $v0,"<<it->Result.Offset<<"($sp)"<<endl; //返回值送到$v0
                 ObjectFile<< "  jr $ra"<<endl;

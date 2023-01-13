@@ -17,7 +17,8 @@ string NewLabel()
 }
 
 map <int,string> Instruction={{LABEL,"LABEL "},{FUNCTION,"FUNCTION  "},{ASSIGN,":="},{PLUS,"+"},{UPLUS,"+"},
-                    {MINUS,"-"},{UMINUS,"-"},{STAR,"*"},{DIV,"/"},{GOTO,"  GOTO  "},
+                    {MINUS,"-"},{UMINUS,"-"},{DPLUS, "++"}, {DMINUS, "--"}, {PLUSD, "++"}, {MINUSD, "--"}, 
+                    {STAR,"*"},{DIV,"/"},{GOTO,"  GOTO  "},
                     {GT,">"},{GE,">="},{LT,"<"},{LE,"<="},{EQ,"=="},{NE,"!="},
                     {JGT,">"},{JGE,">="},{JLT,"<"},{JLE,"<="},{JEQ,"=="},{JNE,"!="},
                     {RETURN,"  RETURN  "},{ARG,"  ARG  "},{PARAM,"  PARAM  "}};
@@ -45,6 +46,10 @@ void DisplayIR(list <IRCode> IRCodes)
                          cout<<"  "<<ResultStr<<":= "<<OpnStr1<<Instruction[a.Op]<<OpnStr2<<endl; break;
             case JLE:  case JLT:   case JGE: case JGT:  case JEQ:  case JNE:
                          cout<<"  "<<"IF "<<OpnStr1<<Instruction[a.Op]<<OpnStr2<<" GOTO "<<ResultStr<<endl;break;
+            case DPLUS: case DMINUS:
+                         cout<<"  "<<ResultStr<<":= "<<Instruction[a.Op]<<OpnStr1<<endl;break;
+            case PLUSD: case MINUSD:
+                         cout<<"  "<<ResultStr<<":= "<<OpnStr1<<Instruction[a.Op]<<endl;break;
             case GOTO: case PARAM: case ARG: case RETURN:
                          cout<<Instruction[a.Op]<<ResultStr<<endl; break;
             case FUNCTION:case LABEL:
