@@ -39,6 +39,24 @@ Label_1:
   ble $t1,$t2,Label_2
   j Label_3
 Label_2:
+  li $t1, 3
+  sw $t1,  16($sp)
+  lw $t1, 12($sp)
+  lw $t2, 16($sp)
+  beq $t1,$t2,Label_5
+  j Label_6
+Label_5:
+  j Label_4
+Label_6:
+  li $t1, 5
+  sw $t1,  16($sp)
+  lw $t1, 12($sp)
+  lw $t2, 16($sp)
+  beq $t1,$t2,Label_7
+  j Label_8
+Label_7:
+  j Label_3
+Label_8:
   lw $a0, 12($sp)
   addi $sp, $sp, -4
   sw $ra,0($sp)
