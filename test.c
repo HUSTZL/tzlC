@@ -15,10 +15,47 @@ int main () {
         write (n);
         i = i+1;
     }
+
+
     t = 0;
     for(i=1;i<=m;i++) {
         t=t+fibo(i);
     }
     write(t);
+
+    if(3) {
+        write(3);
+    }
+    else {
+        write(0);
+    }
+
+    if(t) {
+        write(t);
+    }
+    else {
+        write(0);
+    }
+
+    if(t=0) {
+        write(1);
+    }
+    else {
+        write(0);
+    }
+
+    if(t++) {
+        write(1);
+    }
+    else {
+        write(0);
+    }
+
+    if(fibo(3)) {
+        write(fibo(3));
+    }
+    else {
+        write(0);
+    }
     return 1;
 }

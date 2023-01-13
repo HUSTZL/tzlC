@@ -261,7 +261,11 @@ Opn VarAST::GenIR(int &TempVarOffset)
 
 void VarAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 {
-//根据变量的值确定转移方向
+    //根据变量的值确定转移方向
+    Opn Result=GenIR(TempVarOffset);
+    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
 }
 
 Opn ConstAST::GenIR(int &TempVarOffset)
@@ -305,7 +309,11 @@ Opn AssignAST::GenIR(int &TempVarOffset)
 
 void AssignAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 {
-//根据左值表达式的值确定转移方向
+    //根据左值表达式的值确定转移方向
+    Opn Result=GenIR(TempVarOffset);
+    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
 }
 
 
@@ -386,9 +394,13 @@ Opn UnaryExprAST::GenIR(int &TempVarOffset)
 
 void UnaryExprAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 {
-    Exp->GenIR(TempVarOffset,LabelFalse,LabelTrue);
-    list <IRCode> ::iterator it=IRCodes.end();
-    IRCodes.splice(it,Exp->IRCodes);
+    //Exp->GenIR(TempVarOffset,LabelFalse,LabelTrue);
+    //list <IRCode> ::iterator it=IRCodes.end();
+    //IRCodes.splice(it,Exp->IRCodes);
+    Opn Result=GenIR(TempVarOffset);
+    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
 }
 
 
@@ -431,5 +443,8 @@ Opn FuncCallAST::GenIR(int &TempVarOffset)
 
 void FuncCallAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 {
-//根据函数返回值确定转移方向
+    Opn Result=GenIR(TempVarOffset);
+    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
 }
