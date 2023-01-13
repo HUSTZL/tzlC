@@ -24,6 +24,8 @@ typedef struct {
 id   [A-Za-z][A-Za-z0-9]*
 intconst    0|([1-9][0-9]*)
 floatconst    [0-9]*\.?[0-9]?([eE][-+]?[0-9]+)?
+Oneline_comment		"//"[^\n]*
+Multiline_comment	"/*"([^\*]|(\*)*[^\*/])*(\*)*"*/"
 
 %%
 "int"   	{strcpy(yylval.type_id,  yytext);return TYPE;}
@@ -62,6 +64,9 @@ floatconst    [0-9]*\.?[0-9]?([eE][-+]?[0-9]+)?
 {intconst}      { yylval.type_int=atoi(yytext); return INT;}
 {floatconst}    { yylval.type_float=atof(yytext);     return FLOAT;}
 [ \r\t]     	{}
+{Oneline_comment}			{}		//单行注释
+{Multiline_comment} 		{}		//多行注释
+
 
 [\n]        	{yycolumn=1;}
 .				{ printf("在第 %d 行出现不可识别的符号 \'%s\' \n",yylineno,yytext); ErrorCharNum++;}

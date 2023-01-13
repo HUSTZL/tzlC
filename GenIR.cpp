@@ -109,7 +109,7 @@ void FuncDefAST::GenIR()
     MaxVarSize=FuncDefPtr->ARSize;
     Body->GenIR();
     list <IRCode>::iterator it=IRCodes.end();
-    IRCodes.splice(it,Body->IRCodes);          //连接函数体语句中间代码
+    IRCodes.splice(it,Body->IRCodes);            //连接函数体语句中间代码
     FuncDefPtr->ARSize+=MaxTempVarOffset;        //函数AR(栈帧)的大小
     IRCode IRFunc=IRCode(FUNCTION,Opn(),Opn(),Opn(Name,0,0));
     if (Name==string("main"))
