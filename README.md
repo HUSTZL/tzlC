@@ -1,5 +1,20 @@
 # houC
 
+## How to Run?
+
+Env Ubuntu 22.04, flex, bison, gcc, g++, spim
+```bash
+sudo apt-get install flex, bison, gcc, g++, spim
+git clone git@github.com:HUSTZL/tzlC.git
+cd tzlC
+bash run.sh
+./parser test1.c
+spim
+	load "ObjectFile.s"
+	run
+	exit
+```
+
 ## 语法
 ```bison
 program: ExtDefList		
