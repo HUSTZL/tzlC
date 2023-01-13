@@ -165,6 +165,25 @@ void WhileStmAST::DisplayAST(int indent)
     cout<<"循环体："<<endl;
     Body->DisplayAST(indent+8);
 }
+
+void ForStmAST::DisplayAST(int indent)
+{   //显示for循环语句
+    space(indent);
+    cout<<"for语句："<<endl;
+    space(indent+2);
+    cout<<"单次表达式："<<endl;
+    SinExp->DisplayAST(indent+8);
+    space(indent+2);
+    cout<<"循环条件："<<endl;
+    Cond->DisplayAST(indent+8);
+    space(indent+2);
+    cout<<"末尾循环体："<<endl;
+    EndExp->DisplayAST(indent+8);
+    space(indent+2);
+    cout<<"循环体："<<endl;
+    Body->DisplayAST(indent+8);
+}
+
 void ReturnStmAST::DisplayAST(int indent)
 {   //显示返回语句
     space(indent);

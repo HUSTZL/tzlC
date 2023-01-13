@@ -216,6 +216,31 @@ void WhileStmAST::GenIR()
     IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LoopCond,0,0))); //结束本次循环，转去重新计算循环条件
     IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEnd,0,0))); //循环结束标号
 }
+void ForStmAST::GenIR()
+{
+    string LoopCond=NewLabel();
+    string LoopEntry=NewLabel();
+    string LoopEnd=NewLabel();
+
+    int TempVarOffset=0;
+    SinExp->GenIR(TempVarOffset);
+    Cond->GenIR(TempVarOffset,LoopEntry,LoopEnd);     //计算条件表达式
+    EndExp->GenIR(TempVarOffset);
+    Body->GenIR();
+
+    list <IRCode>::iterator it=IRCodes.end();
+    IRCodes.splice(it,SinExp->IRCodes);
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopCond,0,0)));
+    it=IRCodes.end();
+    IRCodes.splice(it,Cond->IRCodes);
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEntry,0,0)));//循环入口标号
+    it=IRCodes.end();
+    IRCodes.splice(it,Body->IRCodes);
+    it=IRCodes.end();
+    IRCodes.splice(it,EndExp->IRCodes);
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LoopCond,0,0))); //结束本次循环，转去重新计算循环条件
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEnd,0,0))); //循环结束标号
+}
 void ReturnStmAST::GenIR()
 {
     if (!Exp) return;

@@ -10,10 +10,15 @@ int main () {
     int m, n, i, t;
     m=read();
     i = 1;
-    while (i<m) {
+    while (i<=m) {
         n=fibo(i);
         write (n);
-        write(i++);
+        i = i+1;
     }
+    t = 0;
+    for(i=1;i<=m;i++) {
+        t=t+fibo(i);
+    }
+    write(t);
     return 1;
 }

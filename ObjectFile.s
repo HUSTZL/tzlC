@@ -95,7 +95,7 @@ main:
 Label_4:
   lw $t1, 20($sp)
   lw $t2, 12($sp)
-  blt $t1,$t2,Label_5
+  ble $t1,$t2,Label_5
   j Label_6
 Label_5:
   move $t0,$sp
@@ -115,18 +115,57 @@ Label_5:
   jal write
   lw $ra,0($sp)
   addi $sp, $sp, 4
+  li $t1, 1
+  sw $t1,  28($sp)
   lw $t1, 20($sp)
-  sw $t1, 28($sp)
+  lw $t2, 28($sp)
+  add $t3,$t1,$t2
+  sw $t3, 32($sp)
+  lw $t1, 32($sp)
+  sw $t1,  20($sp)
+  j Label_4
+Label_6:
+  li $t1, 0
+  sw $t1,  28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  24($sp)
+  li $t1, 1
+  sw $t1,  28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  20($sp)
+Label_7:
+  lw $t1, 20($sp)
+  lw $t2, 12($sp)
+  ble $t1,$t2,Label_8
+  j Label_9
+Label_8:
+  move $t0,$sp
+  addi $sp, $sp, -44
+  sw $ra,0($sp)
+  lw $t1, 20($t0)
+  sw $t1,12($sp)
+  jal fibo
+  lw $ra,0($sp)
+  addi $sp,$sp,44
+  sw $v0,28($sp)
+  lw $t1, 24($sp)
+  lw $t2, 28($sp)
+  add $t3,$t1,$t2
+  sw $t3, 32($sp)
+  lw $t1, 32($sp)
+  sw $t1,  24($sp)
+  lw $t1, 20($sp)
+  sw $t1, 32($sp)
   addi $t3,$t1,1
   sw $t3, 20($sp)
-  lw $a0, 28($sp)
+  j Label_7
+Label_9:
+  lw $a0, 24($sp)
   addi $sp, $sp, -4
   sw $ra,0($sp)
   jal write
   lw $ra,0($sp)
   addi $sp, $sp, 4
-  j Label_4
-Label_6:
   li $t1, 1
   sw $t1,  28($sp)
   lw $v0,28($sp)

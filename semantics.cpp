@@ -256,6 +256,13 @@ void WhileStmAST::Semantics(int &Offset)
     Cond->Semantics(Offset);
     Body->Semantics(Offset);
 }
+void ForStmAST::Semantics(int &Offset)
+{
+    SinExp->Semantics(Offset);
+    Cond->Semantics(Offset);
+    EndExp->Semantics(Offset);
+    Body->Semantics(Offset);
+}
 void ReturnStmAST::Semantics(int &Offset)
 {
     if (Exp) Exp->Semantics(Offset);

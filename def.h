@@ -296,6 +296,16 @@ class WhileStmAST : public StmAST {     //while语句
         void GenIR() override;
 };
 
+class ForStmAST : public StmAST {     //for语句
+    public:
+        ExpAST *SinExp, *Cond, *EndExp;
+        StmAST *Body;
+
+        void DisplayAST(int l) override;
+        void Semantics(int &Offset) override;
+        void GenIR() override;
+};
+
 class ReturnStmAST : public StmAST {     //表达式语句
     public:
         ExpAST * Exp;
