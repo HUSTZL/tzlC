@@ -34,11 +34,13 @@ ExtDecList: VarDec
 VarDec:     ID   
           | VarDec LB INT RB
 
+ParamVarDec:ID
+
 ParamList:
           | ParamDec  
           | ParamList COMMA ParamDec
           
-ParamDec:   Specifier VarDec
+ParamDec:   Specifier ParamVarDec
 
 CompSt:     LC DefList StmList RC
 
@@ -55,26 +57,32 @@ DecList:    Dec
           
 Dec:  		VarDec
        	  | VarDec ASSIGN Exp
-       	  | VarDec ASSIGN LC ArrExp RC
 
-ArrExp: 	Exp
-       	  |LC ArrExp RC
-          |ArrExp COMMA ArrExp
+Case:   	CASE Exp COLON StmList  
 
-Stmt:   	Exp SEMI
-      	  | CompSt
-      	  | RETURN Exp SEMI
-      	  | RETURN SEMI
-      	  | IF LP Exp RP Stmt %prec LOWER_THEN_ELSE
-      	  | IF LP Exp RP Stmt ELSE Stmt
-      	  | WHILE LP Exp RP Stmt 
-      	  | error SEMI
+CaseList:	Case               
+       	  | Case CaseList
+
+Stmt:       Exp SEMI    		
+      	  | CompSt      		
+      	  | RETURN Exp SEMI   	
+      	  | RETURN SEMI   	    
+      	  | IF LP Exp RP Stmt %prec LOWER_THEN_ELSE 
+      	  | IF LP Exp RP Stmt ELSE Stmt   		  
+      	  | WHILE LP Exp RP Stmt 	
+      	  | FOR LP Exp SEMI Exp SEMI Exp RP Stmt 
+      	  | SWITCH LP Exp RP LC CaseList RC   
+      	  | SWITCH LP Exp RP LC CaseList DEFAULT COLON StmList RC
+      	  | BREAK SEMI        
+      	  | CONTINUE SEMI       
+      	  | error SEMI 
 
 Exp:    	Exp ASSIGN Exp
       	  | Exp PLUS Exp 
        	  | Exp MINUS Exp
        	  | Exp STAR Exp
        	  | Exp DIV Exp 
+		  | Exp MOD Exp 
        	  | LP Exp RP
        	  | MINUS Exp %prec UMINUS  
        	  | PLUS Exp %prec UPLUS
@@ -90,9 +98,10 @@ Exp:    	Exp ASSIGN Exp
        	  | Exp NE Exp 
        	  | Exp EQ Exp
 
-
        	  | DPLUS Exp
-
+		  | DMINUS Exp
+		  | PLUSD Exp
+		  | MINUSD Exp
 
        	  | ID LP Args RP
        	  | ID            	
@@ -202,7 +211,7 @@ Switch语句
 静态分析中的错误处理  9/16
 ```
 
-***2023.1.14*** 加入如下内容
+***2023.1.14*** 重写了语法，并加入如下内容
 
 ```
 行注释与块注释 √
@@ -214,12 +223,16 @@ continue语句 √
 Switch语句 √
 mod √
 数组
+	多维数组在定义时，在符号表中登记内情向量，记录在活动记录中的偏移地址，各维大小，元素类型等。
+	在数组元素的中间代码生成时，分读和写两个运算，包含数组偏移地址，元素在数组区域的偏移地址
+	目标代码生成时，根据这两个偏移地址累积，再加上$sp就得到数组元素的地址，完成读或写的操作
+	仍然留下了很多问题，例如：数组函数参数，数组整体赋值.但咨询祝建华老师，此处不考虑，故重新调整了语法，限制了数组作为函数参数，数组的整体赋值
 静态分析中的错误处理  14/16
 function declaration √
 	Solution:定义一个数据结构，记录只有函数声明和调用的信息.有定义后就删除这项，有调用就记录一下，最后这个数据结构中如果包含有被调用的函数声明就报错，如果没有被调用，这个函数声明可以不理会，不算错.
-外部变量的问题，如何在静态区中分配存储单元 
+外部变量的问题，如何在静态区中分配存储单元 准备实现
 	Solution:这个就是对函数之外的变量，偏移量相对于gp,在静态区分配存储单元，对符号表中的变量访问是，如果层号为0，那就是是由gp和偏移量获取变量地址，不是$sp和偏移量获取变量地址 
-	*准备放弃*
+目标：快速排序
 ```
 
 ----------------------------------

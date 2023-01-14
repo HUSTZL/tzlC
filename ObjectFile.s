@@ -43,13 +43,13 @@ main:
   li $t1, 4
   sw $t1,  12($sp)
   move $t0,$sp
-  addi $sp, $sp, -24
+  addi $sp, $sp, -28
   sw $ra,0($sp)
   lw $t1, 12($t0)
   sw $t1,12($sp)
   jal test2
   lw $ra,0($sp)
-  addi $sp,$sp,24
+  addi $sp,$sp,28
   sw $v0,16($sp)
   lw $a0, 16($sp)
   addi $sp, $sp, -4
@@ -64,25 +64,15 @@ main:
   li $v0,10
   syscall
 
-test2:
-  li $t1, 5
-  sw $t1,  16($sp)
-  lw $t1, 12($sp)
-  lw $t2, 16($sp)
-  add $t3,$t1,$t2
-  sw $t3, 20($sp)
-  lw $v0,20($sp)
-  jr $ra
-
 test1:
   move $t0,$sp
-  addi $sp, $sp, -24
+  addi $sp, $sp, -28
   sw $ra,0($sp)
   lw $t1, 12($t0)
   sw $t1,12($sp)
   jal test2
   lw $ra,0($sp)
-  addi $sp,$sp,24
+  addi $sp,$sp,28
   sw $v0,16($sp)
   li $t1, 1
   sw $t1,  20($sp)
@@ -91,4 +81,14 @@ test1:
   add $t3,$t1,$t2
   sw $t3, 24($sp)
   lw $v0,24($sp)
+  jr $ra
+
+test2:
+  li $t1, 5
+  sw $t1,  16($sp)
+  lw $t1, 12($sp)
+  lw $t2, 16($sp)
+  add $t3,$t1,$t2
+  sw $t3, 20($sp)
+  lw $v0,20($sp)
   jr $ra
