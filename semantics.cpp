@@ -1,6 +1,7 @@
 /*********以下程序只完成了部分静态语义检查，需自行补充完整*******************/
 #include "def.h"
 SymbolStackDef AST::SymbolStack=SymbolStackDef();    //初始化静态成员符号表
+FunctionCallTable AST::functionCallTable=FunctionCallTable();
 
 map <int,int> TypeWidth={{T_CHAR,1},{T_INT,4},{T_FLOAT,8}}; //各类型所占字节数
 map <char,string> KindName={{'V',"变量"},{'F',"函数"},{'P',"形参"}}; //各类型所占字节数
@@ -93,6 +94,20 @@ Symbol * SymbolStackDef::LocateNameGlobal(string Name)//由内向外，整个符
     return nullptr;
 }
 
+void FunctionCallTable::addFuncCalls(int Line, int Column, string Name) 
+{
+    FunctionCall FuncCall(Line, Column, Name);
+    FuncCalls.push_back(FuncCall);
+    return ;
+}
+
+void FunctionCallTable::deleteFuncCalls(string Name) {
+    for(auto fC=FuncCalls.begin(); fC!=FuncCalls.end(); fC++) 
+        if(fC->Name == Name) {
+            FuncCalls.erase(fC--);
+        }
+}
+
 void ProgAST::Semantics0()
 {
     int Offset=0;
@@ -113,6 +128,7 @@ void ProgAST::Semantics(int &Offset)
     FuncDefPtr->Kind='F';
     FuncDefPtr->ParamNum=0;
     FuncDefPtr->ARSize=12;
+    FuncDefPtr->Declaration=0;
     SymbolStack.Symbols.back()->Symbols.push_back(FuncDefPtr);
     FuncDefPtr=new FuncSymbol();
     FuncDefPtr->Name=string("write");
@@ -120,6 +136,7 @@ void ProgAST::Semantics(int &Offset)
     FuncDefPtr->Kind='F';
     FuncDefPtr->ParamNum=1;
     FuncDefPtr->ARSize=4;
+    FuncDefPtr->Declaration=0;
     SymbolStack.Symbols.back()->Symbols.push_back(FuncDefPtr);
 
     VarSymbol *VarDefPtr=new VarSymbol();
@@ -133,6 +150,13 @@ void ProgAST::Semantics(int &Offset)
     {
         a->Semantics(Offset);
     }
+
+    if(functionCallTable.FuncCalls.size() != 0)
+    {
+        for(auto fC:(functionCallTable.FuncCalls))
+            Errors::ErrorAdd(fC.Line, fC.Column, "调用的函数未定义");
+    } 
+
     DisplaySymbolTable(&SymbolStack);
 }
 
@@ -175,7 +199,7 @@ void BasicTypeAST::Semantics(int &Offset)
 
 void FuncDefAST::Semantics(int &Offset)
 {
-    if (!SymbolStack.LocateNameCurrent(Name))  //当前作用域未定义，将变量加入符号表
+    if (!SymbolStack.LocateNameGlobal(Name))  //当前作用域未定义，将变量加入符号表
     {
         int Offset=12;            //局部变量偏移量初始化,预留12个字节存放返回地址等信息，可根据实际情况修改
         MaxVarSize=12;            //计算函数变量需要的最大容量
@@ -189,35 +213,82 @@ void FuncDefAST::Semantics(int &Offset)
         SymbolsInAScope *Local=new SymbolsInAScope();  //生成函数体作用域变量表
         FuncDefPtr->ParamPtr=Local;                    //函数符号表项，指向形参
         SymbolStack.Symbols.back()->Symbols.push_back(FuncDefPtr);//填写函数符号到符号表
-
-
         SymbolStack.Symbols.push_back(Local);          //函数体符号表（含形参）进栈
-        Body->LocalSymbolTable=Local;
         for(auto a:Params)
-            a->Semantics(Offset);              //未考虑参数用寄存器，只是简单在AR中分配单元
+            a->Semantics(Offset, 1);              //未考虑参数用寄存器，只是简单在AR中分配单元
+        
+        if(Body)
+        {
+            Body->LocalSymbolTable=Local;
+            int isReturn=0;
+            Body->Semantics(Offset, 0, 0, isReturn, ((BasicTypeAST*)Type)->Type);               //对函数中的变量，在AR中接在参数后分配单元
+            if(isReturn==0 && ((BasicTypeAST*)Type)->Type!=T_VOID)
+                Errors::ErrorAdd(Line,Column,"函数没有返回语句");
+            FuncDefPtr->ARSize=MaxVarSize; //函数变量需要空间大小（未考虑临时变量），后续再加临时变量单元得到AR大小
+            FuncDefPtr->Declaration=0;
+        }
+        else 
+        {
+            FuncDefPtr->Declaration=1;
+            FuncDefPtr->ARSize=MaxVarSize;
+        } 
+    }
+    else if(((FuncSymbol *)SymbolStack.LocateNameGlobal(Name))->Declaration==1 && Body) 
+    {
+        int Offset=12;            //局部变量偏移量初始化,预留12个字节存放返回地址等信息，可根据实际情况修改
+        MaxVarSize=12;            //计算函数变量需要的最大容量
+        FuncDefPtr=((FuncSymbol *)SymbolStack.LocateNameGlobal(Name));
+        if (((BasicTypeAST*)Type)->Type!=FuncDefPtr->Type)
+            Errors::ErrorAdd(Line,Column,"函数声明和定义的返回类型不同");
+        if (FuncDefPtr->ParamNum != Params.size())
+            Errors::ErrorAdd(Line,Column,"函数声明和定义的参数数目不同");
+
+        SymbolsInAScope *ParamPtr=FuncDefPtr->ParamPtr;
+        int i=0;
+        for(auto a:Params)
+        {
+            a->Semantics(Offset, 0);
+            if (Name!=string("write")) {
+                VarSymbol *Sym=(VarSymbol*)((ParamPtr->Symbols).at(i++));
+                if(Sym->Type != ((BasicTypeAST*)(a->Type))->Type) {
+                    Errors::ErrorAdd(Line,Column,"函数声明和定义的形参类型不一致 "); 
+                    break;
+                }
+            }   
+        }            
+        
+        Body->LocalSymbolTable=FuncDefPtr->ParamPtr;
         int isReturn=0;
         Body->Semantics(Offset, 0, 0, isReturn, ((BasicTypeAST*)Type)->Type);               //对函数中的变量，在AR中接在参数后分配单元
         if(isReturn==0 && ((BasicTypeAST*)Type)->Type!=T_VOID)
             Errors::ErrorAdd(Line,Column,"函数没有返回语句");
         FuncDefPtr->ARSize=MaxVarSize; //函数变量需要空间大小（未考虑临时变量），后续再加临时变量单元得到AR大小
+        FuncDefPtr->Declaration=0;
+        functionCallTable.deleteFuncCalls(Name);
     }
-    else Errors::ErrorAdd(Line,Column,"函数 "+Name+" 重复定义");
+    else Errors::ErrorAdd(Line,Column,"函数 "+Name+" 重复声明或定义");
 }
-void ParamAST::Semantics(int &Offset)
+void ParamAST::Semantics(int &Offset, int declaration)
 {
-    if (!SymbolStack.LocateNameCurrent(ParamName->Name))  //当前作用域未重复定义，将形参名加入符号表
+    if(declaration == 1) 
     {
-         VarSymbol *SymPtr=new VarSymbol();
-         SymPtr->Name=ParamName->Name;
-         SymPtr->Kind='P';
-         SymPtr->Alias=NewAlias();
-         if (typeid(*Type)==typeid(BasicTypeAST))
-             SymPtr->Type=((BasicTypeAST*)Type)->Type;
-         SymPtr->Offset=Offset;   Offset+=TypeWidth[SymPtr->Type];
-         SymbolStack.Symbols.back()->Symbols.push_back(SymPtr);
+        if (!SymbolStack.LocateNameCurrent(ParamName->Name))  //当前作用域未重复定义，将形参名加入符号表
+        {
+            VarSymbol *SymPtr=new VarSymbol();
+            SymPtr->Name=ParamName->Name;
+            SymPtr->Kind='P';
+            SymPtr->Alias=NewAlias();
+            if (typeid(*Type)==typeid(BasicTypeAST))
+                SymPtr->Type=((BasicTypeAST*)Type)->Type;
+            SymPtr->Offset=Offset;   Offset+=TypeWidth[SymPtr->Type];
+            SymbolStack.Symbols.back()->Symbols.push_back(SymPtr);
+        }
+        else Errors::ErrorAdd(Line,Column,"形参名 "+ParamName->Name+" 重复定义");
     }
-    else Errors::ErrorAdd(Line,Column,"形参名 "+ParamName->Name+" 重复定义");
-
+    else 
+    {   
+        Offset+=TypeWidth[((BasicTypeAST*)Type)->Type];
+    }
 }
 
 /**************语句显示******************************/
@@ -411,7 +482,10 @@ void FuncCallAST::Semantics(int &Offset)
                         break;
                     }
                 }   
-            }            
+            }
+
+            if(FuncRef->Declaration==1) 
+                functionCallTable.addFuncCalls(Line, Column, Name);
         }
     }
     else Errors::ErrorAdd(Line,Column,"引用未定义的函数 "+Name);

@@ -108,21 +108,23 @@ void BasicTypeAST::GenIR()
 
 void FuncDefAST::GenIR()
 {
-    for(auto a:Params)
-        IRCodes.push_back(IRCode(PARAM,Opn(),Opn(),Opn(a->ParamName->Name,0,0))); //(PARAM,,,形参名)
+    if(Body) {
+        for(auto a:Params)
+            IRCodes.push_back(IRCode(PARAM,Opn(),Opn(),Opn(a->ParamName->Name,0,0))); //(PARAM,,,形参名)
 
-    MaxVarSize=FuncDefPtr->ARSize;
-    Body->GenIR("", "", "");
-    list <IRCode>::iterator it=IRCodes.end();
-    IRCodes.splice(it,Body->IRCodes);            //连接函数体语句中间代码
-    FuncDefPtr->ARSize+=MaxTempVarOffset;        //函数AR(栈帧)的大小
-    IRCode IRFunc=IRCode(FUNCTION,Opn(),Opn(),Opn(Name,0,0));
-    if (Name==string("main"))
-    {
-        IRFunc.Result.Offset=FuncDefPtr->ARSize; //主函数的栈帧大小
-        IRCodes.push_back(IRCode(END,Opn(),Opn(),Opn()));  //添加程序结束标记
+        MaxVarSize=FuncDefPtr->ARSize;
+        Body->GenIR("", "", "");
+        list <IRCode>::iterator it=IRCodes.end();
+        IRCodes.splice(it,Body->IRCodes);            //连接函数体语句中间代码
+        FuncDefPtr->ARSize+=MaxTempVarOffset;        //函数AR(栈帧)的大小
+        IRCode IRFunc=IRCode(FUNCTION,Opn(),Opn(),Opn(Name,0,0));
+        if (Name==string("main"))
+        {
+            IRFunc.Result.Offset=FuncDefPtr->ARSize; //主函数的栈帧大小
+            IRCodes.push_back(IRCode(END,Opn(),Opn(),Opn()));  //添加程序结束标记
+        }
+        IRCodes.push_front(IRFunc);                             //函数开始(FUNCTION,,,Name)
     }
-    IRCodes.push_front(IRFunc);                             //函数开始(FUNCTION,,,Name)
 }
 void ParamAST::GenIR(){}
 

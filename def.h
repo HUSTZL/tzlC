@@ -45,6 +45,24 @@ class Errors            //用来记录语法、语义错误
         static inline bool IsEmpty(){ return Errs.size()==0;}
 };
 
+/**************函数调用表定义*******************/
+
+class FunctionCall {
+    public:
+        int Line;
+        int Column;
+        string Name;
+        FunctionCall(int Line,int Column,string Name):Line(Line),Column(Column),Name(Name){};
+        FunctionCall(){};
+};
+
+class FunctionCallTable {
+    public:
+        vector<FunctionCall> FuncCalls;
+        void addFuncCalls(int Line, int Column, string Name);
+        void deleteFuncCalls(string Name);
+};
+
 /**************符号表定义**********************/
 class Symbol{
     public:
@@ -128,6 +146,7 @@ class AST {                          //所有结点的基类
         static int MaxVarSize;
         static int MaxTempVarOffset;          //表达式求值时临时变量需要的最大空间
         static SymbolStackDef SymbolStack;     //符号表
+        static FunctionCallTable functionCallTable;
  };
 class ProgAST :public AST{                     //程序结点，程序由多个外部定义组成
     public:
@@ -225,7 +244,7 @@ class ParamAST :public AST{             //形参
         VarDecAST   *ParamName;         //形参名，这里考虑到形参是数组的扩展
 
         void DisplayAST(int indent) override;
-        void Semantics(int &Offset) override;
+        void Semantics(int &Offset, int declaration);
         void GenIR() override;
 };
 
