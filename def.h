@@ -64,6 +64,7 @@ class FuncSymbol:public Symbol{
         int ARSize;       //函数AR的大小，作为调用时分配单元的依据
         int ParamNum;     //形式参数个数
         SymbolsInAScope *ParamPtr;  //指向参数的符号表
+        int Declaration;   //目前在符号表中的是否已经定义，0表示已经定义
 };
 
 //class AyyaySymbol:public Symbol{  //数组名
@@ -246,8 +247,8 @@ class StmAST : public AST{      //所有语句的父类
     public:
         void Semantics(int &Offset) override {};
         void GenIR() override{};
-        virtual void Semantics(int &Offset, int canBreak, int canContinue){};
-        virtual void GenIR(string lableBreak, string lableContinue){};
+        virtual void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType){};
+        virtual void GenIR(string lableCase, string lableBreak, string lableContinue) {};
 };     
 class CompStmAST : public StmAST {     //复合语句
     public:
@@ -255,8 +256,8 @@ class CompStmAST : public StmAST {     //复合语句
         vector <StmAST *> Stms;
 
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 
         //semantic attributes
         SymbolsInAScope *LocalSymbolTable;//每个复合语句对应一个作用域（局部变量）
@@ -268,8 +269,8 @@ class ExprStmAST : public StmAST {     //表达式语句
         ExpAST * Exp;
 
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 };
 
 class IfStmAST : public StmAST {     //条件语句if-then
@@ -278,8 +279,8 @@ class IfStmAST : public StmAST {     //条件语句if-then
         StmAST *ThenStm;
 
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 };
 class IfElseStmAST : public StmAST {//条件语句if-then-else
     public:
@@ -288,8 +289,8 @@ class IfElseStmAST : public StmAST {//条件语句if-then-else
         StmAST *ElseStm;
 
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 };
 
 class WhileStmAST : public StmAST {     //while语句
@@ -298,8 +299,8 @@ class WhileStmAST : public StmAST {     //while语句
         StmAST *Body;
 
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 };
 
 class ForStmAST : public StmAST {     //for语句
@@ -308,31 +309,54 @@ class ForStmAST : public StmAST {     //for语句
         StmAST *Body;
 
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 };
+
+class CaseStmAST : public StmAST {     //for语句
+    public:
+        ExpAST *Cond;
+        vector <StmAST *> Body;
+
+        void DisplayAST(int l) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
+};
+
+class SwitchStmAST : public StmAST {     //for语句
+    public:
+        ExpAST *Exp;
+        vector <CaseStmAST *> Cases;
+        int containDefault;
+        vector <StmAST *> Default;
+
+        void DisplayAST(int l) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
+};
+
 
 class ReturnStmAST : public StmAST {
     public:
         ExpAST * Exp;
 
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 };
 
 class BreakStmAST: public StmAST {
     public:
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 };
 
 class ContinueStmAST: public StmAST {
     public:
         void DisplayAST(int l) override;
-        void Semantics(int &Offset, int canBreak, int canContinue) override;
-        void GenIR(string lableBreak, string lableContinue) override;
+        void Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType) override;
+        void GenIR(string lableCase, string lableBreak, string lableContinue) override;
 };
 
 

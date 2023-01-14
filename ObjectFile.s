@@ -21,58 +21,216 @@ write:
   move $v0,$0
   jr $ra
 
-main:
-  addi $sp, $sp, -28
-  li $t1, 0
-  sw $t1,  16($sp)
-  lw $t1, 16($sp)
-  sw $t1,  12($sp)
+fibo:
   li $t1, 1
   sw $t1,  16($sp)
-  lw $t1, 16($sp)
-  sw $t1,  12($sp)
-Label_1:
-  li $t1, 10
+  lw $t1, 12($sp)
+  lw $t2, 16($sp)
+  beq $t1,$t2,Label_1
+  j Label_3
+Label_3:
+  li $t1, 2
   sw $t1,  20($sp)
   lw $t1, 12($sp)
   lw $t2, 20($sp)
-  ble $t1,$t2,Label_2
-  j Label_3
+  beq $t1,$t2,Label_1
+  j Label_2
+Label_1:
+  li $t1, 1
+  sw $t1,  16($sp)
+  lw $v0,16($sp)
+  jr $ra
 Label_2:
-  li $t1, 3
+  li $t1, 1
   sw $t1,  16($sp)
   lw $t1, 12($sp)
   lw $t2, 16($sp)
-  beq $t1,$t2,Label_5
-  j Label_6
-Label_5:
-  j Label_4
-Label_6:
-  li $t1, 5
-  sw $t1,  16($sp)
+  sub $t3,$t1,$t2
+  sw $t3, 20($sp)
+  move $t0,$sp
+  addi $sp, $sp, -44
+  sw $ra,0($sp)
+  lw $t1, 20($t0)
+  sw $t1,12($sp)
+  jal fibo
+  lw $ra,0($sp)
+  addi $sp,$sp,44
+  sw $v0,24($sp)
+  li $t1, 2
+  sw $t1,  28($sp)
   lw $t1, 12($sp)
-  lw $t2, 16($sp)
-  beq $t1,$t2,Label_7
-  j Label_8
-Label_7:
-  j Label_3
-Label_8:
-  lw $a0, 12($sp)
+  lw $t2, 28($sp)
+  sub $t3,$t1,$t2
+  sw $t3, 32($sp)
+  move $t0,$sp
+  addi $sp, $sp, -44
+  sw $ra,0($sp)
+  lw $t1, 32($t0)
+  sw $t1,12($sp)
+  jal fibo
+  lw $ra,0($sp)
+  addi $sp,$sp,44
+  sw $v0,36($sp)
+  lw $t1, 24($sp)
+  lw $t2, 36($sp)
+  add $t3,$t1,$t2
+  sw $t3, 40($sp)
+  lw $v0,40($sp)
+  jr $ra
+
+main:
+  addi $sp, $sp, -56
+  li $t1, 2
+  sw $t1,  28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  12($sp)
+  li $t1, 0
+  sw $t1,  28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  24($sp)
+  li $t1, 9
+  sw $t1,  28($sp)
+  li $t1, 4
+  sw $t1,  32($sp)
+  lw $t1, 28($sp)
+  lw $t2, 32($sp)
+  div $t1, $t2
+  mfhi $t3
+  sw $t3, 36($sp)
+  lw $a0, 36($sp)
   addi $sp, $sp, -4
   sw $ra,0($sp)
   jal write
   lw $ra,0($sp)
   addi $sp, $sp, 4
+  li $t1, 1
+  sw $t1,  28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  24($sp)
 Label_4:
-  lw $t1, 12($sp)
-  sw $t1, 24($sp)
+  li $t1, 10
+  sw $t1,  32($sp)
+  lw $t1, 24($sp)
+  lw $t2, 32($sp)
+  ble $t1,$t2,Label_5
+  j Label_6
+Label_5:
+  lw $a0, 24($sp)
+  addi $sp, $sp, -4
+  sw $ra,0($sp)
+  jal write
+  lw $ra,0($sp)
+  addi $sp, $sp, 4
+Label_7:
+  lw $t1, 24($sp)
+  sw $t1, 36($sp)
   addi $t3,$t1,1
-  sw $t3, 12($sp)
-  j Label_1
-Label_3:
-  li $t1, 0
+  sw $t3, 24($sp)
+  j Label_4
+Label_6:
+  addi $sp, $sp, -4
+  sw $ra,0($sp)
+  jal read
+  lw $ra,0($sp)
+  addi $sp, $sp, 4
+  sw $v0, 28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  12($sp)
+  li $t1, 1
+  sw $t1,  28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  24($sp)
+Label_8:
+  lw $t1, 24($sp)
+  lw $t2, 12($sp)
+  ble $t1,$t2,Label_9
+  j Label_10
+Label_9:
+  li $t1, 3
+  sw $t1,  28($sp)
+  lw $t1, 24($sp)
+  lw $t2, 28($sp)
+  beq $t1,$t2,Label_11
+  j Label_12
+Label_11:
+  lw $t1, 24($sp)
+  sw $t1, 28($sp)
+  addi $t3,$t1,1
+  sw $t3, 24($sp)
+  j Label_8
+Label_12:
+  move $t0,$sp
+  addi $sp, $sp, -44
+  sw $ra,0($sp)
+  lw $t1, 24($t0)
+  sw $t1,12($sp)
+  jal fibo
+  lw $ra,0($sp)
+  addi $sp,$sp,44
+  sw $v0,28($sp)
+  lw $t1, 28($sp)
   sw $t1,  16($sp)
-  lw $v0,16($sp)
+  lw $a0, 16($sp)
+  addi $sp, $sp, -4
+  sw $ra,0($sp)
+  jal write
+  lw $ra,0($sp)
+  addi $sp, $sp, 4
+  li $t1, 1
+  sw $t1,  28($sp)
+  lw $t1, 24($sp)
+  lw $t2, 28($sp)
+  add $t3,$t1,$t2
+  sw $t3, 32($sp)
+  lw $t1, 32($sp)
+  sw $t1,  24($sp)
+  j Label_8
+Label_10:
+  li $t1, 0
+  sw $t1,  28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  20($sp)
+  li $t1, 1
+  sw $t1,  28($sp)
+  lw $t1, 28($sp)
+  sw $t1,  24($sp)
+Label_13:
+  lw $t1, 24($sp)
+  lw $t2, 12($sp)
+  ble $t1,$t2,Label_14
+  j Label_15
+Label_14:
+  move $t0,$sp
+  addi $sp, $sp, -44
+  sw $ra,0($sp)
+  lw $t1, 24($t0)
+  sw $t1,12($sp)
+  jal fibo
+  lw $ra,0($sp)
+  addi $sp,$sp,44
+  sw $v0,28($sp)
+  lw $t1, 20($sp)
+  lw $t2, 28($sp)
+  add $t3,$t1,$t2
+  sw $t3, 32($sp)
+  lw $t1, 32($sp)
+  sw $t1,  20($sp)
+Label_16:
+  lw $t1, 24($sp)
+  sw $t1, 32($sp)
+  addi $t3,$t1,1
+  sw $t3, 24($sp)
+  j Label_13
+Label_15:
+  lw $a0, 20($sp)
+  addi $sp, $sp, -4
+  sw $ra,0($sp)
+  jal write
+  lw $ra,0($sp)
+  addi $sp, $sp, 4
+  li $t1, 0
+  sw $t1,  28($sp)
+  lw $v0,28($sp)
   jr $ra
   li $v0,10
   syscall

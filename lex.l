@@ -41,7 +41,12 @@ Multiline_comment	"/*"([^\*]|(\*)*[^\*/])*(\*)*"*/"
 "break"		{return BREAK;}
 "continue"	{return CONTINUE;}
 
+"switch"	{return SWITCH;}
+"case"		{return CASE;}
+"default"	{return DEFAULT;}
+
 {id}	{strcpy(yylval.type_id,yytext); return ID;}
+":"		{return COLON;}
 ";"	    {return SEMI;}
 ","	    {return COMMA;}
 ">="	{strcpy(yylval.type_id, yytext);return GE;}
@@ -57,6 +62,7 @@ Multiline_comment	"/*"([^\*]|(\*)*[^\*/])*(\*)*"*/"
 "-"	    {return MINUS;}
 "*"	    {return STAR;}
 "/"	    {return DIV;}
+"%"		{return MOD;}
 "&&"    {return AND;}
 "||"    {return OR;}
 "!"	    {return NOT;}

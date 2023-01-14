@@ -11,7 +11,7 @@ void space(int indent)
     for(int i=0;i<indent;i++) cout<<" ";
 }
 map <int,string> SymbolMap={{T_CHAR,"char"},{T_INT,"int"},{T_FLOAT,"float"},{T_VOID,"void"},{GT,">"},{GE,">="},{LT,"<"},
-                             {LE,"<="},{EQ,"=="},{NE,"!="},{PLUS,"+"},{MINUS,"-"},{UPLUS,"*"},{UMINUS,"/"},{ASSIGN,"="},
+                             {LE,"<="},{EQ,"=="},{NE,"!="},{PLUS,"+"},{MINUS,"-"},{UPLUS,"*"},{UMINUS,"/"},{MOD, "%"},{ASSIGN,"="},
                              {AND,"&&"},{OR,"||"},{NOT,"!"},{DPLUS,"++N"},{DMINUS, "--N"},{PLUSD,"N++"},{MINUSD, "N--"}};
 void ProgAST::DisplayAST(int indent)
 { //依次显示向量ExtDefs中的各个外部定义(外部变量定义和函数定义)
@@ -35,7 +35,7 @@ void BasicTypeAST::DisplayAST(int indent)
 {  //显示基本类型名符号串
     cout.width(6);
     cout.setf(ios::left);
-    cout<<SymbolMap[Type];
+    cout<<SymbolMap[Type]<<endl;
 }
 
 void VarDecAST::DisplayAST(int indent)
@@ -75,8 +75,10 @@ void FuncDefAST::DisplayAST(int indent)
         for(auto a:Params)
             a->DisplayAST(14);
     }
-    cout<<"    函 数 体：  "<<endl;//显示函数返回值类型
+    if(Body) {
+        cout<<"    函 数 体：  "<<endl;//显示函数返回值类型
         Body->DisplayAST(0);
+    }
     cout<<endl;
 }
 
@@ -184,6 +186,41 @@ void ForStmAST::DisplayAST(int indent)
     Body->DisplayAST(indent+8);
 }
 
+void CaseStmAST::DisplayAST(int indent)
+{   //显示case语句
+    space(indent);
+    cout<<"常量Key："<<endl;
+    Cond->DisplayAST(indent+4);
+    if (Body.size())
+    {
+        space(indent);
+        cout<<"语句部分:"<<endl;
+        for(auto a:Body)
+            a->DisplayAST(indent+4);
+    }
+}
+
+void SwitchStmAST::DisplayAST(int indent)
+{   //显示case语句
+    space(indent);
+    cout<<"表达式："<<endl;
+    Exp->DisplayAST(indent+4);
+    if (Cases.size())
+    {
+        space(indent);
+        cout<<"Case部分:"<<endl;
+        for(auto a:Cases)
+            a->DisplayAST(indent+4);
+    }
+    if (containDefault && Default.size())
+    {
+        space(indent);
+        cout<<"Default部分:"<<endl;
+        for(auto a:Default)
+            a->DisplayAST(indent+4);
+    }
+}
+
 void BreakStmAST::DisplayAST(int indent)
 {
     space(indent);
@@ -253,6 +290,7 @@ void ConstAST::DisplayAST(int indent)
         case T_INT:     cout<<ConstVal.constINT;break;
         case T_FLOAT:   cout<<ConstVal.constFLOAT;break;
     }
+    cout<<endl;
 }
 void VarAST::DisplayAST(int indent)
 {  //显示变量

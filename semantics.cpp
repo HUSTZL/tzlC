@@ -62,7 +62,13 @@ void DisplaySymbolTable(SymbolStackDef *SYM)
 }
 bool IsLeftValue(ExpAST *PExp)
 {
-    if (typeid(*PExp)==typeid(VarAST)) return true; //对简单变量、数组下标变量，结构变量,需要查符号表
+    if (typeid(*PExp)==typeid(VarAST)) return true; //对简单变量、数组下标变量,需要查符号表
+    return false;
+}
+
+bool IsConstValue(ExpAST *PExp) 
+{
+    if (typeid(*PExp)==typeid(ConstAST)) return true;
     return false;
 }
 
@@ -189,7 +195,10 @@ void FuncDefAST::Semantics(int &Offset)
         Body->LocalSymbolTable=Local;
         for(auto a:Params)
             a->Semantics(Offset);              //未考虑参数用寄存器，只是简单在AR中分配单元
-        Body->Semantics(Offset, 0, 0);               //对函数中的变量，在AR中接在参数后分配单元
+        int isReturn=0;
+        Body->Semantics(Offset, 0, 0, isReturn, ((BasicTypeAST*)Type)->Type);               //对函数中的变量，在AR中接在参数后分配单元
+        if(isReturn==0 && ((BasicTypeAST*)Type)->Type!=T_VOID)
+            Errors::ErrorAdd(Line,Column,"函数没有返回语句");
         FuncDefPtr->ARSize=MaxVarSize; //函数变量需要空间大小（未考虑临时变量），后续再加临时变量单元得到AR大小
     }
     else Errors::ErrorAdd(Line,Column,"函数 "+Name+" 重复定义");
@@ -212,7 +221,7 @@ void ParamAST::Semantics(int &Offset)
 }
 
 /**************语句显示******************************/
-void CompStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void CompStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     if (!LocalSymbolTable)          //如果不是函数体的复合语句，需自行生成局部符号表
     {
@@ -226,7 +235,7 @@ void CompStmAST::Semantics(int &Offset, int canBreak, int canContinue)
     for(auto a:Stms)
     {
         int Offset_S=Offset;      //前后并列语句可以使用同一片单元，所以取最大值，这里保存起始偏移量
-        a->Semantics(Offset, canBreak, canContinue);
+        a->Semantics(Offset, canBreak, canContinue, isReturn, returnType);
         if (Offset>MaxVarSize) MaxVarSize=Offset;
         Offset=Offset_S;
     }
@@ -236,43 +245,88 @@ void CompStmAST::Semantics(int &Offset, int canBreak, int canContinue)
     SymbolStack.Symbols.pop_back();     //复合语句的符号表退栈
 }
 
-void ExprStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void ExprStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     Exp->Semantics(Offset);
 }
-void IfStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void IfStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     Cond->Semantics(Offset);
-    ThenStm->Semantics(Offset, canBreak, canContinue);
+    ThenStm->Semantics(Offset, canBreak, canContinue, isReturn, returnType);
 }
-void IfElseStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void IfElseStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     Cond->Semantics(Offset);
-    ThenStm->Semantics(Offset, canBreak, canContinue);
-    ElseStm->Semantics(Offset, canBreak, canContinue);
+    ThenStm->Semantics(Offset, canBreak, canContinue, isReturn, returnType);
+    ElseStm->Semantics(Offset, canBreak, canContinue, isReturn, returnType);
 }
-void WhileStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void WhileStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     Cond->Semantics(Offset);
-    Body->Semantics(Offset, 1, 1);
+    Body->Semantics(Offset, 1, 1, isReturn, returnType);
 }
-void ForStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void ForStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     SinExp->Semantics(Offset);
     Cond->Semantics(Offset);
     EndExp->Semantics(Offset);
-    Body->Semantics(Offset, 1, 1);
+    Body->Semantics(Offset, 1, 1, isReturn, returnType);
 }
-void ReturnStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void CaseStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
+{
+    Cond->Semantics(Offset);
+    if(!IsConstValue(Cond))
+        Errors::ErrorAdd(Line,Column,"case中不是常量");
+
+    for(auto a:Body)
+    {
+        int Offset_S=Offset;      //前后并列语句可以使用同一片单元，所以取最大值，这里保存起始偏移量
+        a->Semantics(Offset, 1, canContinue, isReturn, returnType);
+        if (Offset>MaxVarSize) MaxVarSize=Offset;
+        Offset=Offset_S;
+    }
+}
+void SwitchStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
+{
+    Exp->Semantics(Offset);
+    for(auto a:Cases)
+        a->Semantics(Offset, 1, canContinue, isReturn, returnType);
+    for(auto a:Cases) 
+    {
+        int EqualNum=0;
+        for(auto b:Cases)
+        {
+            if(((ConstAST*)(a->Cond))->ConstVal.constCHAR == ((ConstAST*)(b->Cond))->ConstVal.constCHAR &&
+               ((ConstAST*)(a->Cond))->ConstVal.constFLOAT == ((ConstAST*)(b->Cond))->ConstVal.constFLOAT &&
+               ((ConstAST*)(a->Cond))->ConstVal.constINT == ((ConstAST*)(b->Cond))->ConstVal.constINT)
+                EqualNum++;
+        }
+        if(EqualNum > 1)
+            Errors::ErrorAdd(Line,Column,"switch语句的key值相等");
+    }
+
+    for(auto a:Default)
+    {
+        int Offset_S=Offset;      //前后并列语句可以使用同一片单元，所以取最大值，这里保存起始偏移量
+        a->Semantics(Offset, 1, canContinue, isReturn, returnType);
+        if (Offset>MaxVarSize) MaxVarSize=Offset;
+        Offset=Offset_S;
+    }
+}
+void ReturnStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     if (Exp) Exp->Semantics(Offset);
+    if ((returnType == T_VOID && Exp) || (returnType != T_VOID && !Exp) || 
+        (returnType != T_VOID && Exp && returnType != Exp->Type))
+        Errors::ErrorAdd(Line,Column,"函数返回值类型与函数定义的返回值类型不匹配");
+    isReturn=1;
 }
-void BreakStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void BreakStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     if(canBreak == 0)
         Errors::ErrorAdd(Line,Column,"break语句不在循环语句或switch语句中");
 }
-void ContinueStmAST::Semantics(int &Offset, int canBreak, int canContinue)
+void ContinueStmAST::Semantics(int &Offset, int canBreak, int canContinue, int &isReturn, BasicTypes returnType)
 {
     if(canContinue == 0)
         Errors::ErrorAdd(Line,Column,"continue语句不在循环语句中");
@@ -304,8 +358,11 @@ void AssignAST::Semantics(int &Offset)
 {
     LeftValExp->Semantics(Offset);
     if (!IsLeftValue(LeftValExp))
-        Errors::ErrorAdd(Line,Column,"非左值表达式");
+        Errors::ErrorAdd(Line,Column,"非左值表达式赋值");
     RightValExp->Semantics(Offset);
+    if(LeftValExp->Type == T_VOID || RightValExp->Type == T_VOID)
+        Errors::ErrorAdd(Line,Column,"弱类型语言里void类型也不允许赋值");
+    Type=LeftValExp->Type;
 }
 
 void BinaryExprAST::Semantics(int &Offset)
@@ -313,7 +370,8 @@ void BinaryExprAST::Semantics(int &Offset)
     LeftExp->Semantics(Offset);
     RightExp->Semantics(Offset);
     if(LeftExp->Type == T_VOID || RightExp->Type == T_VOID)
-        Errors::ErrorAdd(Line,Column,"弱类型语言里void类型不允许计算");
+        Errors::ErrorAdd(Line,Column,"弱类型语言里void类型也不允许计算");
+    
     if(LeftExp->Type == T_FLOAT || RightExp->Type == T_FLOAT)
         Type=T_FLOAT;
     else if(LeftExp->Type == T_INT || RightExp->Type == T_INT)
@@ -326,26 +384,34 @@ void BinaryExprAST::Semantics(int &Offset)
 void UnaryExprAST::Semantics(int &Offset)
 {
     Exp->Semantics(Offset);
+    if (!IsLeftValue(Exp))
+        Errors::ErrorAdd(Line,Column,"非左值表达式自增、自减");
     Type=Exp->Type;
 }
 
 void FuncCallAST::Semantics(int &Offset)
 {
-
     if (FuncRef=(FuncSymbol *)SymbolStack.LocateNameGlobal(Name))
     {
-        if(FuncRef->ParamNum!=Params.size())
-            Errors::ErrorAdd(Line,Column,"实参表达式个数和形参不一致 "+Name);
-        SymbolsInAScope *ParamPtr=FuncRef->ParamPtr;int i=0;
-        for(auto a:Params)
-        {
-            a->Semantics(Offset);
-            //检查实参表达式个数和形参数是否一致，类型是否一致
-            if (Name!=string("write")) {
-                VarSymbol *Sym=(VarSymbol*)((ParamPtr->Symbols).at(i++));
-                if(Sym->Type != a->Type)
-                    Errors::ErrorAdd(Line,Column,"实参表达式类型和形参不一致 "); 
-            }   
+        if(FuncRef->Kind != 'F')
+            Errors::ErrorAdd(Line,Column,"对非函数名采用函数调用形式 ");
+        else if(FuncRef->ParamNum!=Params.size())
+            Errors::ErrorAdd(Line,Column,"实参表达式个数和形参不一致 ");
+        else {
+            SymbolsInAScope *ParamPtr=FuncRef->ParamPtr;int i=0;
+            Type=FuncRef->Type;
+            for(auto a:Params)
+            {
+                a->Semantics(Offset);
+                //检查实参表达式个数和形参数是否一致，类型是否一致
+                if (Name!=string("write")) {
+                    VarSymbol *Sym=(VarSymbol*)((ParamPtr->Symbols).at(i++));
+                    if(Sym->Type != a->Type) {
+                        Errors::ErrorAdd(Line,Column,"实参表达式类型和形参不一致 "); 
+                        break;
+                    }
+                }   
+            }            
         }
     }
     else Errors::ErrorAdd(Line,Column,"引用未定义的函数 "+Name);

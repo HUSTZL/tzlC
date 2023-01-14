@@ -10,6 +10,8 @@ int main () {
     int m=2, n, t;
     int i = 0;
     
+    write(9%4);
+
     for(i = 1; i <= 10; i++)
         write(i);
     m=read();

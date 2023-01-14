@@ -10,28 +10,30 @@ void yyerror(const char* fmt, ...);
 extern "C" int yylex();
 #define SavePosition t->Line=yylloc.first_line;t->Column=yylloc.first_column
 typedef struct YYLVAL {
-       int         type_int;
-	float       type_float;
-	char        type_id[32];
+       int                  type_int;
+	float                type_float;
+	char                 type_id[32];
 
-	ProgAST     *program;
-	vector <ExtDefAST *> ExtDefList;  	    //外部定义（外部变量、函数）列表
-       ExtDefAST   *ExtDef;
-       vector <VarDecAST*>  ExtDecList;        //外部、局部变量列表
-       TypeAST     *Specifier;
-       VarDecAST *VarDec;
-       CompStmAST  *CompSt;
-	vector <ParamAST *>  ParamList;         //形参列表
-	ParamAST *ParamDec;
+	ProgAST                     *program;
+	vector <ExtDefAST *>        ExtDefList;  	    //外部定义（外部变量、函数）列表
+       ExtDefAST                   *ExtDef;
+       vector <VarDecAST*>         ExtDecList;        //外部、局部变量列表
+       TypeAST                     *Specifier;
+       VarDecAST                   *VarDec;
+       CompStmAST                  *CompSt;
+	vector <ParamAST *>         ParamList;         //形参列表
+	ParamAST                    *ParamDec;
 
-	vector <StmAST *>   StmList;
-	StmAST      *Stmt;
-	vector <DefAST *>   DefList;
-	DefAST      *Def;
-       vector <VarDecAST *> DecList;
-       VarDecAST   *Dec;
-       ExpAST      *Exp;
-	vector <ExpAST *>    Args;       	//实参列表
+	vector <StmAST *>           StmList;
+	StmAST                      *Stmt;
+	vector <DefAST *>           DefList;
+	DefAST                      *Def;
+       vector <VarDecAST *>        DecList;
+       VarDecAST                   *Dec;
+       ExpAST                      *Exp;
+	vector <ExpAST *>           Args;       	       //实参列表
+       CaseStmAST                  *Case;
+       vector <CaseStmAST *>       CaseList;
 }YYLVAL;
 #define YYSTYPE YYLVAL
 
@@ -53,6 +55,8 @@ typedef struct YYLVAL {
 %type  <DecList>    DecList
 %type  <Dec>        Dec
 %type  <Exp>        Exp
+%type  <Case>       Case;
+%type  <CaseList>   CaseList;
 
 
 %type  <Args>  Args
@@ -64,8 +68,8 @@ typedef struct YYLVAL {
 %token <type_float> FLOAT               /*指定float常量的语义值是type_float*/
 
 %token DPLUS DMINUS PLUSD MINUSD LP RP LB RB LC RC SEMI COMMA     /*用bison对该文件编译时，带参数-d，生成的exp.tab.h中给这些单词进行编码，可在lex.l中包含parser.tab.h使用这些单词种类码*/
-%token PLUS MINUS STAR DIV GE GT LE LT NE EQ ASSIGN AND OR NOT IF ELSE WHILE RETURN FOR COLON
-%token BREAK CONTINUE
+%token PLUS MINUS STAR DIV MOD GE GT LE LT NE EQ ASSIGN AND OR NOT IF ELSE WHILE RETURN FOR
+%token BREAK CONTINUE SWITCH CASE DEFAULT COLON
 
 /*以下为接在上述token后依次编码的枚举常量，用于后续过程*/
 %token EXT_DEF_LIST EXT_VAR_DEF FUNC_DEF FUNC_DEC EXT_DEC_LIST PARAM_LIST PARAM_DEC VAR_DEF DEC_LIST DEF_LIST COMP_STM STM_LIST EXP_STMT IF_THEN IF_THEN_ELSE
@@ -78,6 +82,7 @@ typedef struct YYLVAL {
 %left AND
 %left LT LE GT GE
 %left NE EQ
+%left MOD
 %left PLUS MINUS
 %left STAR DIV
 %right UMINUS NOT DPLUS DMINUS UPLUS
@@ -142,7 +147,7 @@ Def:   Specifier DecList SEMI {DefAST *t=new DefAST();t->Type=$1;t->LocVars=$2;$
 DecList: Dec  {$$=vector <VarDecAST *>(); $$.push_back($1);}
        | Dec COMMA DecList  {$$=$3;$$.insert($$.begin(),$1);}
 	   ;
-Dec:  VarDec  {$$=$1;}                  //如何将多种形式的局部变量加上一个父类，简单，数组，初始化
+Dec:   VarDec  {$$=$1;}                  //如何将多种形式的局部变量加上一个父类，简单，数组，初始化
        | VarDec ASSIGN Exp  {$$=$1;$$->Exp=$3; }      //带初始化的变量定义
        | VarDec ASSIGN LC ArrExp RC     {}
       ;
@@ -151,6 +156,10 @@ ArrExp: Exp                          {}
        |ArrExp COMMA ArrExp          {}
        ;
 
+Case:   CASE Exp COLON StmList  {CaseStmAST *t=new CaseStmAST(); t->Cond=$2; t->Body=$4; $$=t; SavePosition;}
+
+CaseList:Case               {$$=vector <CaseStmAST *>(); $$.push_back($1); }
+       | Case CaseList      {$$=$2; $$.insert($$.begin(),$1); }
 
 Stmt:   Exp SEMI    		{ExprStmAST *t=new ExprStmAST();t->Exp=$1;$$=t;SavePosition;}
       | CompSt      		{$$=$1;}      //复合语句不再生成新的结点
@@ -161,6 +170,9 @@ Stmt:   Exp SEMI    		{ExprStmAST *t=new ExprStmAST();t->Exp=$1;$$=t;SavePositio
       | WHILE LP Exp RP Stmt 	{WhileStmAST *t=new WhileStmAST();t->Cond=$3;t->Body=$5; $$=t; SavePosition; }
       | FOR LP Exp SEMI Exp SEMI Exp RP Stmt 
               {ForStmAST *t=new ForStmAST(); t->SinExp=$3; t->Cond=$5; t->EndExp=$7; t->Body=$9; $$=t; SavePosition;}
+      | SWITCH LP Exp RP LC CaseList RC   {SwitchStmAST *t=new SwitchStmAST(); t->Exp=$3; t->Cases=$6; t->containDefault=0; $$=t; SavePosition;}
+      | SWITCH LP Exp RP LC CaseList DEFAULT COLON StmList RC
+              {SwitchStmAST *t=new SwitchStmAST(); t->Exp=$3; t->Cases=$6; t->containDefault=1; t->Default=$9; $$=t; SavePosition;}
       | BREAK SEMI          {BreakStmAST *t=new BreakStmAST(); $$=t; SavePosition; }
       | CONTINUE SEMI       {ContinueStmAST *t=new ContinueStmAST(); $$=t; SavePosition; }
       | error SEMI   {$$=NULL;}
@@ -173,6 +185,7 @@ Exp:    Exp ASSIGN Exp {AssignAST *t=new AssignAST();t->Op=ASSIGN;
       | Exp MINUS Exp{BinaryExprAST *t=new BinaryExprAST();t->Op=MINUS;t->LeftExp=$1;t->RightExp=$3;$$=t;SavePosition;}
       | Exp STAR Exp {BinaryExprAST *t=new BinaryExprAST();t->Op=STAR;t->LeftExp=$1;t->RightExp=$3;$$=t;SavePosition;}
       | Exp DIV Exp  {BinaryExprAST *t=new BinaryExprAST();t->Op=DIV;t->LeftExp=$1;t->RightExp=$3;$$=t;SavePosition;}
+      | Exp MOD Exp  {BinaryExprAST *t=new BinaryExprAST();t->Op=MOD;t->LeftExp=$1;t->RightExp=$3;$$=t;SavePosition;}
       | LP Exp RP    {$$=$2;}
       | MINUS Exp %prec UMINUS  {UnaryExprAST *t=new UnaryExprAST();t->Op=UMINUS;t->Exp=$2;$$=t;SavePosition;}  //单目减
       | PLUS Exp %prec UPLUS    {UnaryExprAST *t=new UnaryExprAST();t->Op=UPLUS;t->Exp=$2;$$=t;SavePosition;}   //单目加

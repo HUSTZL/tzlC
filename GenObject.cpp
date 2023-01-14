@@ -45,14 +45,19 @@ void GenObject(list <IRCode> IRCodes)
             case MINUS:
             case STAR:
             case DIV:
+            case MOD:
                  ObjectFile<< "  lw $t1, "<<it->Opn1.Offset<<"($sp)"<<endl;
                  ObjectFile<< "  lw $t2, "<<it->Opn2.Offset<<"($sp)"<<endl;
                  if (it->Op==PLUS)       ObjectFile<< "  add $t3,$t1,$t2"<<endl;
                  else if (it->Op==MINUS) ObjectFile<< "  sub $t3,$t1,$t2"<<endl;
                  else if (it->Op==STAR)  ObjectFile<< "  mul $t3,$t1,$t2"<<endl;
-                 else  {
+                 else if (it->Op==DIV) {
                             ObjectFile<< "  div $t1, $t2"<<endl;
                             ObjectFile<< "  mflo $t3"<<endl;
+                        }
+                else    {
+                            ObjectFile<< "  div $t1, $t2"<<endl;
+                            ObjectFile<< "  mfhi $t3"<<endl;
                         }
                  ObjectFile<< "  sw $t3, "<<it->Result.Offset<<"($sp)"<<endl;
                  break;
