@@ -6,10 +6,11 @@ int main() {
     return 0;
 }
 int test1 (int a) {
-    return test2(a)+1;
+    return a;
 }
 int test2 (int a) {
-    return a+5;
+    return test1(a)+10;
 }
+
 
 

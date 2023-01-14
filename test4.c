@@ -8,6 +8,9 @@ int test(int a) {
     a++;
 }
 int main () {
+    /*
+        test Line Count
+    */
     a+1 = 3;
     fibo(1.0);
     return 0;
