@@ -104,13 +104,20 @@ Exp:    	Exp ASSIGN Exp
 		  | MINUSD Exp
 
        	  | ID LP Args RP
-       	  | ID            	
+       	  | ID
+		  | ID SubList            	
        	  | INT           	
        	  | FLOAT       
        	  
 Args:  
        	  |  Exp 
        	  |	 Args COMMA  Exp
+
+Sub:         LB Exp RB
+
+SubList: 	 Sub                
+    	  |  SubList Sub         {$$=$1; $$.push_back($2);}
+
 ```
 
 
@@ -196,6 +203,8 @@ class Errors //用来记录语法、语义错误
 （19）调用的函数已经声明但未定义 √
 （20）函数声明和定义的返回类型不同，或参数数目不同，或声明和定义的形参类型不一致 √
 ```
+
+## workflow
 
 ***2023.1.11*** Read Code.
 
