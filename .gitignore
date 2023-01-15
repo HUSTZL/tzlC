@@ -1,0 +1,7 @@
+.vscode/
+/*.o
+/*.yy.c
+/*.yy.o
+/*.tab.cpp
+/*.tab.hpp
+/*.tab.o
