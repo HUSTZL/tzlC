@@ -83,6 +83,8 @@ class FuncSymbol:public Symbol{
         int ParamNum;     //形式参数个数
         SymbolsInAScope *ParamPtr;  //指向参数的符号表
         int Declaration;   //目前在符号表中的是否已经定义，0表示已经定义
+        vector<ParamAST*> Params;  //定义时指出参数类型和参数数目，声明时指出参数类型和参数数目，在定义时参考
+
 };
 
 //class AyyaySymbol:public Symbol{  //数组名
@@ -244,7 +246,7 @@ class ParamAST :public AST{             //形参
         VarDecAST   *ParamName;         //形参名，这里考虑到形参是数组的扩展
 
         void DisplayAST(int indent) override;
-        void Semantics(int &Offset, int declaration);
+        void Semantics(int &Offset) override;
         void GenIR() override;
 };
 
@@ -407,7 +409,7 @@ class VarAST :public ExpAST{        //标识符变量
     public:
         string      Name;
         VarSymbol   *VarRef;        //指向该变量对应的符号表项
-        //vector <ExpAST> index;    //数组的下标变量，须在文法处定义各维下标为整型表达式
+        vector <ExpAST> index;      //数组的下标变量，须在文法处定义各维下标为整型表达式
 
         void DisplayAST(int indent) override;
         void Semantics(int &Offset) override;

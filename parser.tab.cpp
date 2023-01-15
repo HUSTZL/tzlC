@@ -1965,7 +1965,7 @@ yyreduce:
 
   case 34: /* Stmt: RETURN SEMI  */
 #line 164 "parser.ypp"
-                            {ReturnStmAST *t=new ReturnStmAST();t->Exp=NULL;(yyval.Stmt)=t;SavePosition;}
+                        {ReturnStmAST *t=new ReturnStmAST();t->Exp=NULL;(yyval.Stmt)=t;SavePosition;}
 #line 1970 "parser.tab.cpp"
     break;
 

@@ -199,7 +199,7 @@ void BasicTypeAST::Semantics(int &Offset)
 
 void FuncDefAST::Semantics(int &Offset)
 {
-    if (!SymbolStack.LocateNameGlobal(Name))  //当前作用域未定义，将变量加入符号表
+    if (!SymbolStack.LocateNameCurrent(Name))  //当前作用域未定义，将变量加入符号表
     {
         int Offset=12;            //局部变量偏移量初始化,预留12个字节存放返回地址等信息，可根据实际情况修改
         MaxVarSize=12;            //计算函数变量需要的最大容量
@@ -207,19 +207,20 @@ void FuncDefAST::Semantics(int &Offset)
         FuncDefPtr->Name=Name;
         FuncDefPtr->Kind='F';
         if (typeid(*Type)==typeid(BasicTypeAST))     //处理符号项的返回类型，目前仅基本类型T_CHAR,T_INT,T_FLOAT
-             FuncDefPtr->Type=((BasicTypeAST*)Type)->Type;
+            FuncDefPtr->Type=((BasicTypeAST*)Type)->Type;
         FuncDefPtr->ParamNum=Params.size();
+        FuncDefPtr->Params=Params;
 
-        SymbolsInAScope *Local=new SymbolsInAScope();  //生成函数体作用域变量表
-        FuncDefPtr->ParamPtr=Local;                    //函数符号表项，指向形参
-        SymbolStack.Symbols.back()->Symbols.push_back(FuncDefPtr);//填写函数符号到符号表
-        SymbolStack.Symbols.push_back(Local);          //函数体符号表（含形参）进栈
-        for(auto a:Params)
-            a->Semantics(Offset, 1);              //未考虑参数用寄存器，只是简单在AR中分配单元
-        
         if(Body)
         {
+            SymbolsInAScope *Local=new SymbolsInAScope();  //生成函数体作用域变量表
+            FuncDefPtr->ParamPtr=Local;                    //函数符号表项，指向形参
+            SymbolStack.Symbols.back()->Symbols.push_back(FuncDefPtr);//填写函数符号到符号表
+            SymbolStack.Symbols.push_back(Local);          //函数体符号表（含形参）进栈
+            for(auto a:Params)
+                a->Semantics(Offset);              //未考虑参数用寄存器，只是简单在AR中分配单元
             Body->LocalSymbolTable=Local;
+
             int isReturn=0;
             Body->Semantics(Offset, 0, 0, isReturn, ((BasicTypeAST*)Type)->Type);               //对函数中的变量，在AR中接在参数后分配单元
             if(isReturn==0 && ((BasicTypeAST*)Type)->Type!=T_VOID)
@@ -231,33 +232,33 @@ void FuncDefAST::Semantics(int &Offset)
         {
             FuncDefPtr->Declaration=1;
             FuncDefPtr->ARSize=MaxVarSize;
+            SymbolStack.Symbols.back()->Symbols.push_back(FuncDefPtr);//填写函数符号到符号表
         } 
     }
-    else if(((FuncSymbol *)SymbolStack.LocateNameGlobal(Name))->Declaration==1 && Body) 
+    else if(((FuncSymbol *)SymbolStack.LocateNameCurrent(Name))->Declaration==1 && Body) 
     {
         int Offset=12;            //局部变量偏移量初始化,预留12个字节存放返回地址等信息，可根据实际情况修改
         MaxVarSize=12;            //计算函数变量需要的最大容量
-        FuncDefPtr=((FuncSymbol *)SymbolStack.LocateNameGlobal(Name));
+        FuncDefPtr=((FuncSymbol *)SymbolStack.LocateNameCurrent(Name));
         if (((BasicTypeAST*)Type)->Type!=FuncDefPtr->Type)
             Errors::ErrorAdd(Line,Column,"函数声明和定义的返回类型不同");
         if (FuncDefPtr->ParamNum != Params.size())
             Errors::ErrorAdd(Line,Column,"函数声明和定义的参数数目不同");
 
-        SymbolsInAScope *ParamPtr=FuncDefPtr->ParamPtr;
-        int i=0;
-        for(auto a:Params)
-        {
-            a->Semantics(Offset, 0);
-            if (Name!=string("write")) {
-                VarSymbol *Sym=(VarSymbol*)((ParamPtr->Symbols).at(i++));
-                if(Sym->Type != ((BasicTypeAST*)(a->Type))->Type) {
-                    Errors::ErrorAdd(Line,Column,"函数声明和定义的形参类型不一致 "); 
-                    break;
-                }
-            }   
-        }            
-        
-        Body->LocalSymbolTable=FuncDefPtr->ParamPtr;
+        SymbolsInAScope *Local=new SymbolsInAScope();  //生成函数体作用域变量表
+        FuncDefPtr->ParamPtr=Local;                    //函数符号表项，指向形参
+        SymbolStack.Symbols.push_back(Local);          //函数体符号表（含形参）进栈
+        int i = 0;
+        for(auto a:Params) {
+            a->Semantics(Offset);               //未考虑参数用寄存器，只是简单在AR中分配单元
+            ParamAST *param=(ParamAST*)((FuncDefPtr->Params).at(i++));
+            if(((BasicTypeAST*)(param->Type))->Type != ((BasicTypeAST*)(a->Type))->Type) {
+                Errors::ErrorAdd(Line,Column,"函数声明和定义的形参类型不一致 "); 
+                break;
+            }
+        }
+        Body->LocalSymbolTable=Local;
+
         int isReturn=0;
         Body->Semantics(Offset, 0, 0, isReturn, ((BasicTypeAST*)Type)->Type);               //对函数中的变量，在AR中接在参数后分配单元
         if(isReturn==0 && ((BasicTypeAST*)Type)->Type!=T_VOID)
@@ -268,27 +269,21 @@ void FuncDefAST::Semantics(int &Offset)
     }
     else Errors::ErrorAdd(Line,Column,"函数 "+Name+" 重复声明或定义");
 }
-void ParamAST::Semantics(int &Offset, int declaration)
+void ParamAST::Semantics(int &Offset)
 {
-    if(declaration == 1) 
+    if (!SymbolStack.LocateNameCurrent(ParamName->Name))  //当前作用域未重复定义，将形参名加入符号表
     {
-        if (!SymbolStack.LocateNameCurrent(ParamName->Name))  //当前作用域未重复定义，将形参名加入符号表
-        {
-            VarSymbol *SymPtr=new VarSymbol();
-            SymPtr->Name=ParamName->Name;
-            SymPtr->Kind='P';
-            SymPtr->Alias=NewAlias();
-            if (typeid(*Type)==typeid(BasicTypeAST))
-                SymPtr->Type=((BasicTypeAST*)Type)->Type;
-            SymPtr->Offset=Offset;   Offset+=TypeWidth[SymPtr->Type];
-            SymbolStack.Symbols.back()->Symbols.push_back(SymPtr);
-        }
-        else Errors::ErrorAdd(Line,Column,"形参名 "+ParamName->Name+" 重复定义");
+        VarSymbol *SymPtr=new VarSymbol();
+        SymPtr->Name=ParamName->Name;
+        SymPtr->Kind='P';
+        SymPtr->Alias=NewAlias();
+        if (typeid(*Type)==typeid(BasicTypeAST))
+            SymPtr->Type=((BasicTypeAST*)Type)->Type;
+        SymPtr->Offset=Offset;   Offset+=TypeWidth[SymPtr->Type];
+        SymbolStack.Symbols.back()->Symbols.push_back(SymPtr);
     }
-    else 
-    {   
-        Offset+=TypeWidth[((BasicTypeAST*)Type)->Type];
-    }
+    else Errors::ErrorAdd(Line,Column,"形参名 "+ParamName->Name+" 重复定义");
+
 }
 
 /**************语句显示******************************/
@@ -469,21 +464,19 @@ void FuncCallAST::Semantics(int &Offset)
         else if(FuncRef->ParamNum!=Params.size())
             Errors::ErrorAdd(Line,Column,"实参表达式个数和形参不一致 ");
         else {
-            SymbolsInAScope *ParamPtr=FuncRef->ParamPtr;int i=0;
+            int i=0;
             Type=FuncRef->Type;
-            for(auto a:Params)
-            {
-                a->Semantics(Offset);
-                //检查实参表达式个数和形参数是否一致，类型是否一致
-                if (Name!=string("write")) {
-                    VarSymbol *Sym=(VarSymbol*)((ParamPtr->Symbols).at(i++));
-                    if(Sym->Type != a->Type) {
+
+            for(auto a:Params) {
+                a->Semantics(Offset);               //未考虑参数用寄存器，只是简单在AR中分配单元
+                if(Name != "write") {
+                    ParamAST *param=(ParamAST*)((FuncRef->Params).at(i++));
+                    if(((BasicTypeAST*)(param->Type))->Type != a->Type) {
                         Errors::ErrorAdd(Line,Column,"实参表达式类型和形参不一致 "); 
                         break;
                     }
-                }   
+                }
             }
-
             if(FuncRef->Declaration==1) 
                 functionCallTable.addFuncCalls(Line, Column, Name);
         }

@@ -70,6 +70,8 @@ Multiline_comment	"/*"([^\*]|(\*)*[^\*/])*(\*)*"*/"
 ")"	    {return RP;}
 "{"	    {return LC;}
 "}"	    {return RC;}
+"["		{return LB;}
+"]"		{return RB;}
 {intconst}      { yylval.type_int=atoi(yytext); return INT;}
 {floatconst}    { yylval.type_float=atof(yytext);     return FLOAT;}
 [ \r\t]     	{}

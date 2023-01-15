@@ -161,7 +161,7 @@ CaseList:Case               {$$=vector <CaseStmAST *>(); $$.push_back($1); }
 Stmt:   Exp SEMI    		{ExprStmAST *t=new ExprStmAST();t->Exp=$1;$$=t;SavePosition;}
       | CompSt      		{$$=$1;}      //复合语句不再生成新的结点
       | RETURN Exp SEMI   	{ReturnStmAST *t=new ReturnStmAST();t->Exp=$2;$$=t;SavePosition;}
-      | RETURN SEMI   	    {ReturnStmAST *t=new ReturnStmAST();t->Exp=NULL;$$=t;SavePosition;}
+      | RETURN SEMI   	{ReturnStmAST *t=new ReturnStmAST();t->Exp=NULL;$$=t;SavePosition;}
       | IF LP Exp RP Stmt %prec LOWER_THEN_ELSE {IfStmAST *t=new IfStmAST();t->Cond=$3;t->ThenStm=$5;$$=t; SavePosition;}
       | IF LP Exp RP Stmt ELSE Stmt   		    {IfElseStmAST *t=new IfElseStmAST();t->Cond=$3;t->ThenStm=$5;t->ElseStm=$7;$$=t;SavePosition;}
       | WHILE LP Exp RP Stmt 	{WhileStmAST *t=new WhileStmAST();t->Cond=$3;t->Body=$5; $$=t; SavePosition; }
