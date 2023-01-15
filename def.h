@@ -75,6 +75,7 @@ class VarSymbol:public Symbol{
     public:
         string Alias;   //别名，为解决中间代码中，作用域嵌套变量同名的显示时的二义性问题
         int Offset;     //变量在对应AR中的偏移量
+        vector <int> Dims;
 };
 
 class FuncSymbol:public Symbol{
@@ -86,10 +87,6 @@ class FuncSymbol:public Symbol{
         vector<ParamAST*> Params;  //定义时指出参数类型和参数数目，声明时指出参数类型和参数数目，在定义时参考
 
 };
-
-//class AyyaySymbol:public Symbol{  //数组名
-//    public:   数组的内情向量信息
-//}
 
 class SymbolsInAScope{    //单一作用域的符号名，每个复合语句对应一个符号表
     public:
@@ -104,6 +101,18 @@ class SymbolStackDef{//符号表类定义,栈结构栈底为全局变量和函�
 };
 
 /**************中间代码（四元式）定义**********************/
+class OffsetOpn
+{
+    public:
+        int     isArraySub=0;
+        string  Name;       //变量别名（为空时表示常量）或函数名
+        int     Type;
+        int     Offset;     //AR中的偏移量
+
+        OffsetOpn(int isArraySub,string Name,int Type,int Offset):isArraySub(isArraySub),Name(Name),Type(Type),Offset(Offset){};
+        OffsetOpn(){};
+};
+
 class Opn
 {
     public:
@@ -117,8 +126,10 @@ class Opn
             int   constINT;
             float constFLOAT;
         };
+        OffsetOpn offsetOpn;
 
         Opn(string Name,int Type,int Offset):Name(Name),Type(Type),Offset(Offset){};
+        Opn(string Name,int Type,int Offset, OffsetOpn offsetOpn):Name(Name),Type(Type),Offset(Offset), offsetOpn(offsetOpn){};
         Opn(){};
 };
 
@@ -187,22 +198,6 @@ class BasicTypeAST:public TypeAST{  //用对象存储基本数据类型
         void GenIR() override;
 };
 
-class StructTypeAST:public TypeAST{//结构类型名
-    public:
-        string Name;
-
-        void DisplayAST(int indent) override;
-        void Semantics(int &Offset) override;
-        void GenIR() override;
-};
-
-//class StructDefAST:public TypeAST{//结构类型名
-//public:
-//    string Name;
-//    vector <defAST *> vars;
-//    void DisplayAST(int indent) override;
-//};
-
 
 class VarDecAST :public AST{  //简单变量（标识符）、数组的定义
     public:
@@ -217,14 +212,6 @@ class VarDecAST :public AST{  //简单变量（标识符）、数组的定义
         void Semantics(int &Offset,TypeAST *Type);
         void GenIR() override;
 };
-
-//class ArrayInitAST public ExpAST
-//{
-//public:
-//    vector <Exp *> IniList;     //Exp或ArrayInitAST的指针序列序列
-//};
-
-
 
 /*函数类定义*/
 class FuncDefAST :public ExtDefAST{
@@ -409,7 +396,7 @@ class VarAST :public ExpAST{        //标识符变量
     public:
         string      Name;
         VarSymbol   *VarRef;        //指向该变量对应的符号表项
-        vector <ExpAST> index;      //数组的下标变量，须在文法处定义各维下标为整型表达式
+        vector <ExpAST *> index;    //数组的下标变量，须在文法处定义各维下标为整型表达式
 
         void DisplayAST(int indent) override;
         void Semantics(int &Offset) override;

@@ -313,8 +313,64 @@ void ContinueStmAST::GenIR(string lableCase, string lableBreak, string lableCont
 Opn VarAST::GenIR(int &TempVarOffset)
 {
     //通过语义检查后，VarRef指向对应表项，否则为空，程序会崩溃
-    Opn VarOpn(VarRef->Alias,VarRef->Type,VarRef->Offset);
-    return VarOpn;
+    if(VarRef->Kind == 'V' || VarRef->Kind == 'P') 
+    {
+        Opn VarOpn(VarRef->Alias,VarRef->Type,VarRef->Offset);
+        return VarOpn;
+    }
+    else if(VarRef->Kind == 'A')
+    {
+        list <IRCode> ::iterator it=IRCodes.end();
+        Opn Result=index[0]->GenIR(TempVarOffset);
+        it=IRCodes.end();
+        IRCodes.splice(it,index[0]->IRCodes);
+        for(int i=1;i<index.size();i++) 
+        {
+            Opn DimValue(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存常量值
+            TempVarOffset+=TypeWidth[T_INT];           //修改临时变量的偏移量
+            if (TempVarOffset>MaxTempVarOffset)
+                MaxTempVarOffset=TempVarOffset;
+            Opn Opn1("_CONST",T_INT,0);             //别名或临时变量名为_CONST时，表示常量
+            Opn1.constINT=VarRef->Dims[i];
+            IRCodes.push_back(IRCode(ASSIGN,Opn1,Opn(),DimValue));
+
+            Opn MultiResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+            TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
+            if (TempVarOffset>MaxTempVarOffset)
+                MaxTempVarOffset=TempVarOffset;
+            IRCodes.push_back(IRCode(STAR,Result,DimValue,MultiResult));
+
+            Opn IndexValue=index[i]->GenIR(TempVarOffset);
+            it=IRCodes.end();
+            IRCodes.splice(it,index[i]->IRCodes);
+
+            Opn AddResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+            TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
+            if (TempVarOffset>MaxTempVarOffset)
+                MaxTempVarOffset=TempVarOffset;
+            IRCodes.push_back(IRCode(PLUS,MultiResult,IndexValue,AddResult));
+
+            Result=AddResult;
+        }
+
+        Opn TypeValue(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存常量值
+        TempVarOffset+=TypeWidth[T_INT];           //修改临时变量的偏移量
+        if (TempVarOffset>MaxTempVarOffset)
+            MaxTempVarOffset=TempVarOffset;
+        Opn Opn2("_CONST",T_INT,0);             //别名或临时变量名为_CONST时，表示常量
+        Opn2.constINT=TypeWidth[VarRef->Type];
+        IRCodes.push_back(IRCode(ASSIGN,Opn2,Opn(),TypeValue));
+
+        Opn OffsetResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+        TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
+        if (TempVarOffset>MaxTempVarOffset)
+            MaxTempVarOffset=TempVarOffset;
+        IRCodes.push_back(IRCode(STAR,Result,TypeValue,OffsetResult));
+
+        OffsetOpn offsetOpn(1, OffsetResult.Name, T_INT, OffsetResult.Offset);
+        Opn VarOpn(VarRef->Alias,VarRef->Type,VarRef->Offset, offsetOpn);
+        return VarOpn;
+    }
 }
 
 void VarAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
@@ -405,6 +461,7 @@ void BinaryExprAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
             RightExp->GenIR(TempVarOffset,LabelTrue,LabelFalse);
             list <IRCode> ::iterator it=IRCodes.end();
             IRCodes.splice(it,LeftExp->IRCodes);
+            
             IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(Label,0,0)));
             it=IRCodes.end();
             IRCodes.splice(it,RightExp->IRCodes);

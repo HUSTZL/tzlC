@@ -296,6 +296,15 @@ void VarAST::DisplayAST(int indent)
 {  //显示变量
     space(indent);
     cout<<Name<<endl;       //显示外部变量名
+    if (index.size())
+    {
+        space(indent+10);
+        cout<<index.size()<<"个下标:\n"<<endl;
+        for(auto a:index)
+        {
+            a->DisplayAST(indent+16);
+        }
+    }
 }
 
 void FuncCallAST::DisplayAST(int indent)

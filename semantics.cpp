@@ -4,7 +4,7 @@ SymbolStackDef AST::SymbolStack=SymbolStackDef();    //初始化静态成员符�
 FunctionCallTable AST::functionCallTable=FunctionCallTable();
 
 map <int,int> TypeWidth={{T_CHAR,1},{T_INT,4},{T_FLOAT,8}}; //各类型所占字节数
-map <char,string> KindName={{'V',"变量"},{'F',"函数"},{'P',"形参"}}; //各类型所占字节数
+map <char,string> KindName={{'V',"变量"},{'F',"函数"},{'P',"形参"},{'A',"数组"}}; //各类型所占字节数
 
 
 vector <Error>Errors:: Errs={};
@@ -41,7 +41,7 @@ void DisplaySymbolTable(SymbolStackDef *SYM)
             cout.width(20);
             cout<<SymPtr->Name;
             cout.width(8);
-            if (SymPtr->Kind=='V' || SymPtr->Kind=='P')   //符号是变量,形参,显示别名
+            if (SymPtr->Kind=='V' || SymPtr->Kind=='A' || SymPtr->Kind=='P')   //符号是变量,形参,显示别名
                 cout<<((VarSymbol*)SymPtr)->Alias;
             else cout<<" ";
             cout.width(8);
@@ -55,7 +55,13 @@ void DisplaySymbolTable(SymbolStackDef *SYM)
                 cout<<"形参数: "<<((FuncSymbol*)SymPtr)->ParamNum;
                 cout<<"  变量空间: "<<((FuncSymbol*)SymPtr)->ARSize;
             }
-            else if (SymPtr->Kind=='A');  //符号是数组，需要显示各维大小
+            else if (SymPtr->Kind=='A') //符号是数组，需要显示各维大小
+            {
+                cout<<"偏移量: "<<((VarSymbol*)SymPtr)->Offset << " ";
+                cout<< ((VarSymbol*)SymPtr)->Dims.size() <<"维：";
+                for(int i=0;i<((VarSymbol*)SymPtr)->Dims.size();i++)
+                    cout<< ((VarSymbol*)SymPtr)->Dims[i] << " ";
+            }  
             cout<<endl;
         }
         cout<<"----------------------------------------------------------------------"<<endl;
@@ -173,14 +179,33 @@ void VarDecAST::Semantics(int &Offset,TypeAST *Type)
     {
          VarDefPtr=new VarSymbol();
          VarDefPtr->Name=Name;
+         VarDefPtr->Dims=Dims;
          VarDefPtr->Alias=NewAlias();
-         if (!Dims.size())VarDefPtr->Kind='V';
-         else VarDefPtr->Kind='A';
          if (typeid(*Type)==typeid(BasicTypeAST))
-             VarDefPtr->Type=((BasicTypeAST*)Type)->Type;
-         VarDefPtr->Offset=Offset;   Offset+=TypeWidth[VarDefPtr->Type];
-         if (Exp)                      //有初值表达式时的处理
+            VarDefPtr->Type=((BasicTypeAST*)Type)->Type;
+         VarDefPtr->Offset=Offset;  
+
+         if (!Dims.size()) 
+         {
+            VarDefPtr->Kind='V';
+            Offset+=TypeWidth[VarDefPtr->Type];
+         }
+         else 
+         {
+            VarDefPtr->Kind='A';
+            int ans = 1;
+            for(int i = 0; i < Dims.size(); i++)
+                ans *= Dims[i];
+            Offset+=ans*TypeWidth[VarDefPtr->Type];
+         }
+         
+         if (Exp)                      //有初值表达式时的处理 
+         {
             Exp->Semantics(Offset);
+            if(Dims.size())
+                Errors::ErrorAdd(Line,Column,"数组用表达式初始化") ;
+         }
+
          SymbolStack.Symbols.back()->Symbols.push_back(VarDefPtr);
     }
     else Errors::ErrorAdd(Line,Column,"变量 "+Name+" 重复定义") ;
@@ -408,8 +433,22 @@ void VarAST::Semantics(int &Offset)
         if(VarRef->Kind=='F')
             Errors::ErrorAdd(Line,Column,"对函数名采用非函数调用形式访问 ") ;
         //简单变量则提取变量类型属性
-        else 
+        else {
             Type=VarRef->Type;
+            if(VarRef->Kind=='V' && index.size()>0)
+                Errors::ErrorAdd(Line,Column,"对非数组变量采用下标变量的形式访问") ;
+            else if(VarRef->Kind=='A' )
+            {
+                if(index.size() != VarRef->Dims.size())
+                    Errors::ErrorAdd(Line,Column,"数组维数不正确");
+                for(auto a:index) 
+                {
+                    a->Semantics(Offset);
+                    if(a->Type != T_INT)
+                        Errors::ErrorAdd(Line,Column,"数组变量的下标不是整型表达式");
+                }
+            }
+        }
     }
     else Errors::ErrorAdd(Line,Column,"引用未定义的符号 "+Name) ;
 

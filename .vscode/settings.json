@@ -14,6 +14,8 @@
         "fstream": "cpp",
         "functional": "cpp",
         "istream": "cpp",
-        "streambuf": "cpp"
+        "streambuf": "cpp",
+        "*.tcc": "cpp",
+        "vector": "cpp"
     }
 }

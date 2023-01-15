@@ -3,6 +3,34 @@
 #define YYSTYPE int   //此行是为了包含parser.tab.hpp不引起错误而加,可以在后面使用相关常量
 #include "parser.tab.hpp"
 
+string LoadFromMem(string Reg1, Opn opn, string Reg2)
+{
+    string load;
+    if(!opn.offsetOpn.isArraySub)
+        load = "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+    else 
+        load=
+            "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + Reg2 + ")\n" +
+            "  add $sp, $sp, $t4\n" +
+            "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
+            "  sub $sp, $sp, $t4"; 
+    return load;
+}
+
+string StoreToMem (string Reg1, Opn opn, string Reg2)
+{
+    string load;
+    if(!opn.offsetOpn.isArraySub)
+        load = "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+    else 
+        load=
+            "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + Reg2 + ")\n" +
+            "  add $sp, $sp, $t4\n" +
+            "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
+            "  sub $sp, $sp, $t4"; 
+    return load;
+}
+
 void GenObject(list <IRCode> IRCodes)
 {
     fstream ObjectFile;
@@ -38,16 +66,16 @@ void GenObject(list <IRCode> IRCodes)
                 if (it->Opn1.Name==string("_CONST"))  //这里只考虑了整常数
                     ObjectFile<< "  li $t1, "<<it->Opn1.constINT<<endl;
                 else       //这里只考虑了简单变量，数组则需要扩充
-                    ObjectFile<< "  lw $t1, "<<it->Opn1.Offset<<"($sp)"<<endl;
-                ObjectFile<< "  sw $t1,  "<<it->Result.Offset<<"($sp)"<<endl;
+                    ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
+                ObjectFile<< StoreToMem("$t1", it->Result, "$sp") << endl;
                 break;
             case PLUS:
             case MINUS:
             case STAR:
             case DIV:
             case MOD:
-                 ObjectFile<< "  lw $t1, "<<it->Opn1.Offset<<"($sp)"<<endl;
-                 ObjectFile<< "  lw $t2, "<<it->Opn2.Offset<<"($sp)"<<endl;
+                 ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
+                 ObjectFile<< LoadFromMem("$t2", it->Opn2, "$sp") << endl;
                  if (it->Op==PLUS)       ObjectFile<< "  add $t3,$t1,$t2"<<endl;
                  else if (it->Op==MINUS) ObjectFile<< "  sub $t3,$t1,$t2"<<endl;
                  else if (it->Op==STAR)  ObjectFile<< "  mul $t3,$t1,$t2"<<endl;
@@ -59,30 +87,30 @@ void GenObject(list <IRCode> IRCodes)
                             ObjectFile<< "  div $t1, $t2"<<endl;
                             ObjectFile<< "  mfhi $t3"<<endl;
                         }
-                 ObjectFile<< "  sw $t3, "<<it->Result.Offset<<"($sp)"<<endl;
+                 ObjectFile<< StoreToMem("$t3", it->Result, "$sp") << endl;
                  break;
 
             case DPLUS:
             case DMINUS:
-                 ObjectFile<< "  lw $t1, "<<it->Opn1.Offset<<"($sp)"<<endl;
+                 ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
                  if (it->Op==DPLUS)       ObjectFile<< "  addi $t3,$t1,1"<<endl;
                  else if (it->Op==DMINUS) ObjectFile<< "  addi $t3,$t1,-1"<<endl;
-                 ObjectFile<< "  sw $t3, "<<it->Opn1.Offset<<"($sp)"<<endl;
-                 ObjectFile<< "  sw $t3, "<<it->Result.Offset<<"($sp)"<<endl;
+                 ObjectFile<< StoreToMem("$t3", it->Opn1, "$sp") << endl;
+                 ObjectFile<< StoreToMem("$t3", it->Result, "$sp") << endl;
                  break;
 
             case PLUSD:
             case MINUSD:
-                 ObjectFile<< "  lw $t1, "<<it->Opn1.Offset<<"($sp)"<<endl;
-                 ObjectFile<< "  sw $t1, "<<it->Result.Offset<<"($sp)"<<endl;
+                 ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
+                 ObjectFile<< StoreToMem("$t1", it->Result, "$sp") << endl;
                  if (it->Op==PLUSD)       ObjectFile<< "  addi $t3,$t1,1"<<endl;
                  else if (it->Op==MINUSD) ObjectFile<< "  addi $t3,$t1,-1"<<endl;
-                 ObjectFile<< "  sw $t3, "<<it->Opn1.Offset<<"($sp)"<<endl;
+                 ObjectFile<< StoreToMem("$t3", it->Opn1, "$sp") << endl;
                  break;
 
 
             case RETURN:
-                ObjectFile<< "  lw $v0,"<<it->Result.Offset<<"($sp)"<<endl; //返回值送到$v0
+                ObjectFile<< LoadFromMem("$v0", it->Result, "$sp") << endl;
                 ObjectFile<< "  jr $ra"<<endl;
                 break;
 
@@ -104,8 +132,8 @@ void GenObject(list <IRCode> IRCodes)
             case JGT:
             case JEQ:
             case JNE:
-                ObjectFile<< "  lw $t1, "<<it->Opn1.Offset<<"($sp)"<<endl;
-                ObjectFile<< "  lw $t2, "<<it->Opn2.Offset<<"($sp)"<<endl;
+                ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
+                ObjectFile<< LoadFromMem("$t2", it->Opn2, "$sp") << endl;
                 if (it->Op==JLE)      ObjectFile<< "  ble $t1,$t2,"<<it->Result.Name<<endl;
                 else if (it->Op==JLT) ObjectFile<< "  blt $t1,$t2,"<<it->Result.Name<<endl;
                 else if (it->Op==JGE) ObjectFile<< "  bge $t1,$t2,"<<it->Result.Name<<endl;
@@ -123,12 +151,12 @@ void GenObject(list <IRCode> IRCodes)
                     ObjectFile<< "  jal read\n";           //保留返回地址
                     ObjectFile<< "  lw $ra,0($sp)\n";      //恢复返回地址
                     ObjectFile<< "  addi $sp, $sp, 4\n";
-                    ObjectFile<< "  sw $v0, "<<it->Result.Offset<<"($sp)\n";
+                    ObjectFile<< StoreToMem("$v0", it->Result, "$sp") << endl;
                     break;
                 }
                 if (it->Opn1.Name==string("write"))//特殊处理write
                 {
-                    ObjectFile<< "  lw $a0, "<<it0->Result.Offset<<"($sp)\n";  //前面ARG的偏移量
+                    ObjectFile<< LoadFromMem("$a0", it0->Result, "$sp") << endl; //前面ARG的偏移量
                     ObjectFile<< "  addi $sp, $sp, -4\n";
                     ObjectFile<< "  sw $ra,0($sp)\n";
                     ObjectFile<< "  jal write\n";
@@ -144,14 +172,14 @@ void GenObject(list <IRCode> IRCodes)
                 while (it0->Op==ARG)                       //依次取参数值传递到形参单元中
                 {
                     //将原栈帧的偏移it0->Result.Offset数据取出，送到新栈帧的it0->Opn1.Offset
-                    ObjectFile<< "  lw $t1, "<<it0->Result.Offset<<"($t0)"<<endl; //取实参值到$t1中
-                    ObjectFile<< "  sw $t1,"<<it0->Opn1.Offset<<"($sp)"<<endl;    //送到被调用函数的形参单元
+                    ObjectFile<< LoadFromMem("$t1", it0->Result, "$t0") << endl;
+                    ObjectFile<< StoreToMem("$t1", it0->Opn1, "$sp") << endl;
                     it0--;
                 }
                 ObjectFile<<"  jal "<<it->Opn1.Name<<endl;      //跳转到被调用函数
                 ObjectFile<<"  lw $ra,0($sp)"<<endl;            //恢复返回地址
                 ObjectFile<<"  addi $sp,$sp,"<<((FuncSymbol *)(it->Opn1.SymPtr))->ARSize<<endl; //释放活动记录空间
-                ObjectFile<<"  sw $v0,"<<it->Result.Offset<<"($sp)"<<endl;  //取返回值,如void函数，不需要取值
+                ObjectFile<< StoreToMem("$v0", it->Result, "$sp") << endl;    //取返回值,如void函数，不需要取值
                 break;
         }
     }
