@@ -6,28 +6,58 @@
 string LoadFromMem(string Reg1, Opn opn, string Reg2)
 {
     string load;
-    if(!opn.offsetOpn.isArraySub)
-        load = "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+    if(Reg2 != "$sp" || (Reg2 == "$sp" && opn.isGolbal==0)) 
+    {
+        if(!opn.offsetOpn.isArraySub)
+            load = "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+        else 
+            load=
+                "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + "$sp" + ")\n" +
+                "  add " + Reg2 + ", " + Reg2 + ", $t4\n" +
+                "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
+                "  sub " + Reg2 + ", " + Reg2 + ", $t4"; 
+    }
     else 
-        load=
-            "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + Reg2 + ")\n" +
-            "  add $sp, $sp, $t4\n" +
-            "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
-            "  sub $sp, $sp, $t4"; 
+    {
+        Reg2 = "$gp";
+        if(!opn.offsetOpn.isArraySub)
+            load = "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+        else 
+            load=
+                "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + "$sp" + ")\n" +
+                "  add " + Reg2 + ", " + Reg2 + ", $t4\n" +
+                "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
+                "  sub " + Reg2 + ", " + Reg2 + ", $t4"; 
+    }
     return load;
 }
 
 string StoreToMem (string Reg1, Opn opn, string Reg2)
 {
     string load;
-    if(!opn.offsetOpn.isArraySub)
-        load = "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
-    else 
-        load=
-            "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + Reg2 + ")\n" +
-            "  add $sp, $sp, $t4\n" +
-            "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
-            "  sub $sp, $sp, $t4"; 
+    if(Reg2 != "$sp" || (Reg2 == "$sp" && opn.isGolbal==0)) 
+    {
+        if(!opn.offsetOpn.isArraySub)
+            load = "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+        else 
+            load=
+                "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + "$sp" + ")\n" +
+                "  add " + Reg2 + ", " + Reg2 + ", $t4\n" +
+                "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
+                "  sub " + Reg2 + ", " + Reg2 + ", $t4"; 
+    }
+    else
+    {
+        Reg2 = "$gp";
+        if(!opn.offsetOpn.isArraySub)
+            load = "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+        else 
+            load=
+                "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + "$sp" + ")\n" +
+                "  add " + Reg2 + ", " + Reg2 + ", $t4\n" +
+                "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
+                "  sub " + Reg2 + ", " + Reg2 + ", $t4"; 
+    }
     return load;
 }
 

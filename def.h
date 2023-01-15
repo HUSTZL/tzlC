@@ -75,6 +75,7 @@ class VarSymbol:public Symbol{
     public:
         string Alias;   //别名，为解决中间代码中，作用域嵌套变量同名的显示时的二义性问题
         int Offset;     //变量在对应AR中的偏移量
+        int isGolbal=0;
         vector <int> Dims;
 };
 
@@ -118,6 +119,7 @@ class Opn
     public:
         string  Name;       //变量别名（为空时表示常量）或函数名
         int     Type;
+        int     isGolbal=0;
         union
         {
             int     Offset;     //AR中的偏移量
@@ -128,8 +130,8 @@ class Opn
         };
         OffsetOpn offsetOpn;
 
-        Opn(string Name,int Type,int Offset):Name(Name),Type(Type),Offset(Offset){};
-        Opn(string Name,int Type,int Offset, OffsetOpn offsetOpn):Name(Name),Type(Type),Offset(Offset), offsetOpn(offsetOpn){};
+        Opn(string Name,int Type,int Offset,int isGolbal):Name(Name),Type(Type),Offset(Offset),isGolbal(isGolbal){};
+        Opn(string Name,int Type,int Offset,int isGolbal, OffsetOpn offsetOpn):Name(Name),Type(Type),Offset(Offset),isGolbal(isGolbal),offsetOpn(offsetOpn){};
         Opn(){};
 };
 
@@ -209,7 +211,8 @@ class VarDecAST :public AST{  //简单变量（标识符）、数组的定义
 
         void DisplayAST(int indent) override;
         void Semantics(int &Offset) override{};
-        void Semantics(int &Offset,TypeAST *Type);
+        void Semantics(int &Offset, int &GolbalOffset,TypeAST *Type);
+        void Semantics(int &Offset, TypeAST *Type);
         void GenIR() override;
 };
 

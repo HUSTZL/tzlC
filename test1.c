@@ -1,4 +1,3 @@
-int a, b, c;
 int fibo (int a) { // compute the Fibonacci sequence recursively 
     if (a == 1 || a == 2)
         return 1;

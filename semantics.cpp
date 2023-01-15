@@ -49,7 +49,7 @@ void DisplaySymbolTable(SymbolStackDef *SYM)
             cout.width(8);
             cout<<KindName[SymPtr->Kind];
             if (SymPtr->Kind=='V' || SymPtr->Kind=='P')   //符号是变量,形参
-                cout<<"偏移量: "<<((VarSymbol*)SymPtr)->Offset;
+                cout<<"偏移量: "<<((VarSymbol*)SymPtr)->Offset << "  全局: " << ((VarSymbol*)SymPtr)->isGolbal;
             else if (SymPtr->Kind=='F')  //符号是函数
             {
                 cout<<"形参数: "<<((FuncSymbol*)SymPtr)->ParamNum;
@@ -57,7 +57,7 @@ void DisplaySymbolTable(SymbolStackDef *SYM)
             }
             else if (SymPtr->Kind=='A') //符号是数组，需要显示各维大小
             {
-                cout<<"偏移量: "<<((VarSymbol*)SymPtr)->Offset << " ";
+                cout<<"偏移量: "<<((VarSymbol*)SymPtr)->Offset  << "  全局: " << ((VarSymbol*)SymPtr)->isGolbal << "  ";
                 cout<< ((VarSymbol*)SymPtr)->Dims.size() <<"维：";
                 for(int i=0;i<((VarSymbol*)SymPtr)->Dims.size();i++)
                     cout<< ((VarSymbol*)SymPtr)->Dims[i] << " ";
@@ -168,54 +168,87 @@ void ProgAST::Semantics(int &Offset)
 
 void ExtVarDefAST::Semantics(int &Offset)  //外部定义对象的语义
 {
+    int GolbalOffset=0;
     for(auto a:ExtVars)
-        a->Semantics(Offset,Type);
+        a->Semantics(Offset, GolbalOffset, Type);
 }
 
-
-void VarDecAST::Semantics(int &Offset,TypeAST *Type)
+void VarDecAST::Semantics(int &Offset, TypeAST *Type)
 {
     if (!SymbolStack.LocateNameCurrent(Name))  //当前作用域未定义，将变量加入符号表
     {
-         VarDefPtr=new VarSymbol();
-         VarDefPtr->Name=Name;
-         VarDefPtr->Dims=Dims;
-         VarDefPtr->Alias=NewAlias();
-         if (typeid(*Type)==typeid(BasicTypeAST))
+        VarDefPtr=new VarSymbol();
+        VarDefPtr->Name=Name;
+        VarDefPtr->Dims=Dims;
+        VarDefPtr->isGolbal=0;
+        VarDefPtr->Alias=NewAlias();
+        if (typeid(*Type)==typeid(BasicTypeAST))
             VarDefPtr->Type=((BasicTypeAST*)Type)->Type;
-         VarDefPtr->Offset=Offset;  
+        VarDefPtr->Offset=Offset;  
 
-         if (!Dims.size()) 
-         {
+        if (!Dims.size()) 
+        {
             VarDefPtr->Kind='V';
             Offset+=TypeWidth[VarDefPtr->Type];
-         }
-         else 
-         {
+        }
+        else 
+        {
             VarDefPtr->Kind='A';
             int ans = 1;
             for(int i = 0; i < Dims.size(); i++)
                 ans *= Dims[i];
             Offset+=ans*TypeWidth[VarDefPtr->Type];
-         }
+        }
          
-         if (Exp)                      //有初值表达式时的处理 
-         {
+        if (Exp)                      //有初值表达式时的处理 
+        {
             Exp->Semantics(Offset);
             if(Dims.size())
                 Errors::ErrorAdd(Line,Column,"数组用表达式初始化") ;
-         }
+        }
 
-         SymbolStack.Symbols.back()->Symbols.push_back(VarDefPtr);
+        SymbolStack.Symbols.back()->Symbols.push_back(VarDefPtr);
     }
     else Errors::ErrorAdd(Line,Column,"变量 "+Name+" 重复定义") ;
+}
 
+void VarDecAST::Semantics(int &Offset, int &GolbalOffset, TypeAST *Type)
+{
+    if (!SymbolStack.LocateNameCurrent(Name))  //当前作用域未定义，将变量加入符号表
+    {
+        VarDefPtr=new VarSymbol();
+        VarDefPtr->Name=Name;
+        VarDefPtr->Dims=Dims;
+        VarDefPtr->isGolbal=1;
+        VarDefPtr->Alias=NewAlias();
+        if (typeid(*Type)==typeid(BasicTypeAST))
+            VarDefPtr->Type=((BasicTypeAST*)Type)->Type;
+        
+        VarDefPtr->Offset=GolbalOffset; 
+
+        if (!Dims.size()) 
+        {
+            VarDefPtr->Kind='V';
+            GolbalOffset+=TypeWidth[VarDefPtr->Type];
+        }
+        else 
+        {
+            VarDefPtr->Kind='A';
+            int ans = 1;
+            for(int i = 0; i < Dims.size(); i++)
+                ans *= Dims[i];
+            GolbalOffset+=ans*TypeWidth[VarDefPtr->Type];
+        }
+
+        SymbolStack.Symbols.back()->Symbols.push_back(VarDefPtr);
+    }
+    else Errors::ErrorAdd(Line,Column,"变量 "+Name+" 重复定义") ;
 }
 
 void DefAST::Semantics(int &Offset)
 {    //依次提取变量符号进行语义分析
-     for(auto a:LocVars)
-            a->Semantics(Offset,Type);
+    for(auto a:LocVars)
+        a->Semantics(Offset,Type);
 }
 
 void BasicTypeAST::Semantics(int &Offset)

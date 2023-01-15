@@ -84,7 +84,7 @@ void ExtVarDefAST::GenIR()  //外部变量定义
 void VarDecAST::GenIR()
 {//有初始化表达式，需要生成中间代码
     if (!Exp) return;
-    Opn Result(VarDefPtr->Alias,VarDefPtr->Type,VarDefPtr->Offset);
+    Opn Result(VarDefPtr->Alias,VarDefPtr->Type,VarDefPtr->Offset,VarDefPtr->isGolbal);
     int TempVarOffset=0;
     Opn Opn1=Exp->GenIR(TempVarOffset);
     list <IRCode> ::iterator it=IRCodes.end();
@@ -110,14 +110,14 @@ void FuncDefAST::GenIR()
 {
     if(Body) {
         for(auto a:Params)
-            IRCodes.push_back(IRCode(PARAM,Opn(),Opn(),Opn(a->ParamName->Name,0,0))); //(PARAM,,,形参名)
+            IRCodes.push_back(IRCode(PARAM,Opn(),Opn(),Opn(a->ParamName->Name,0,0,0))); //(PARAM,,,形参名)
 
         MaxVarSize=FuncDefPtr->ARSize;
         Body->GenIR("", "", "");
         list <IRCode>::iterator it=IRCodes.end();
         IRCodes.splice(it,Body->IRCodes);            //连接函数体语句中间代码
         FuncDefPtr->ARSize+=MaxTempVarOffset;        //函数AR(栈帧)的大小
-        IRCode IRFunc=IRCode(FUNCTION,Opn(),Opn(),Opn(Name,0,0));
+        IRCode IRFunc=IRCode(FUNCTION,Opn(),Opn(),Opn(Name,0,0,0));
         if (Name==string("main"))
         {
             IRFunc.Result.Offset=FuncDefPtr->ARSize; //主函数的栈帧大小
@@ -170,10 +170,10 @@ void IfStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
 
     list <IRCode>::iterator it=IRCodes.end();
     IRCodes.splice(it,Cond->IRCodes);
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelThen,0,0)));//if子句前的标号
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelThen,0,0,0)));//if子句前的标号
     it=IRCodes.end();
     IRCodes.splice(it,ThenStm->IRCodes);
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelEnd,0,0))); //if语句出口标号
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelEnd,0,0,0))); //if语句出口标号
 
 }
 void IfElseStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
@@ -189,14 +189,14 @@ void IfElseStmAST::GenIR(string lableCase, string lableBreak, string lableContin
 
     list <IRCode>::iterator it=IRCodes.end();
     IRCodes.splice(it,Cond->IRCodes);
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelThen,0,0)));//if子句前的标号
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelThen,0,0,0)));//if子句前的标号
     it=IRCodes.end();
     IRCodes.splice(it,ThenStm->IRCodes);
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelEnd,0,0)));
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelElse,0,0)));//else子句前的标号
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelEnd,0,0,0)));
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelElse,0,0,0)));//else子句前的标号
     it=IRCodes.end();
     IRCodes.splice(it,ElseStm->IRCodes);
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelEnd,0,0))); //if语句出口标号
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LabelEnd,0,0,0))); //if语句出口标号
 
 }
 void WhileStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
@@ -209,14 +209,14 @@ void WhileStmAST::GenIR(string lableCase, string lableBreak, string lableContinu
     Cond->GenIR(TempVarOffset,LoopEntry,LoopEnd);     //计算条件表达式
     Body->GenIR("", LoopEnd, LoopCond);
 
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopCond,0,0)));
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopCond,0,0,0)));
     list <IRCode>::iterator it=IRCodes.end();
     IRCodes.splice(it,Cond->IRCodes);
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEntry,0,0)));//循环入口标号
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEntry,0,0,0)));//循环入口标号
     it=IRCodes.end();
     IRCodes.splice(it,Body->IRCodes);
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LoopCond,0,0))); //结束本次循环，转去重新计算循环条件
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEnd,0,0))); //循环结束标号
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LoopCond,0,0,0))); //结束本次循环，转去重新计算循环条件
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEnd,0,0,0))); //循环结束标号
 }
 void ForStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
 {
@@ -233,22 +233,22 @@ void ForStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
 
     list <IRCode>::iterator it=IRCodes.end();
     IRCodes.splice(it,SinExp->IRCodes);
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopCond,0,0)));
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopCond,0,0,0)));
     it=IRCodes.end();
     IRCodes.splice(it,Cond->IRCodes);
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEntry,0,0)));//循环入口标号
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEntry,0,0,0)));//循环入口标号
     it=IRCodes.end();
     IRCodes.splice(it,Body->IRCodes);
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopContinue,0,0))); 
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopContinue,0,0,0))); 
     it=IRCodes.end();
     IRCodes.splice(it,EndExp->IRCodes);
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LoopCond,0,0))); //结束本次循环，转去重新计算循环条件
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEnd,0,0))); //循环结束标号
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LoopCond,0,0,0))); //结束本次循环，转去重新计算循环条件
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(LoopEnd,0,0,0))); //循环结束标号
 }
 void CaseStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
 {
     list <IRCode> ::iterator it=IRCodes.end();
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(lableCase,0,0))); //循环结束标号
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(lableCase,0,0,0))); //循环结束标号
     for(auto a:Body)
     {
         a->GenIR("", lableBreak, lableContinue);
@@ -266,14 +266,14 @@ void SwitchStmAST::GenIR(string lableCase, string lableBreak, string lableContin
     IRCodes.splice(it,Exp->IRCodes);
 
     for(auto a:Cases) {
-        Opn KeyValue("_CONST",T_INT,0);KeyValue.constINT=(((ConstAST *)(a->Cond))->ConstVal).constINT;
+        Opn KeyValue("_CONST",T_INT,0,0);KeyValue.constINT=(((ConstAST *)(a->Cond))->ConstVal).constINT;
         string caseLable=NewLabel();
-        IRCodes.push_back(IRCode(JEQ,Result,KeyValue,Opn(caseLable,0,0)));
+        IRCodes.push_back(IRCode(JEQ,Result,KeyValue,Opn(caseLable,0,0,0)));
         a->GenIR(caseLable, SwitchEnd, lableContinue);
     }
     if(containDefault) {
         SwitchDefault=NewLabel();
-        IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(SwitchDefault,0,0)));
+        IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(SwitchDefault,0,0,0)));
     }
 
     for(auto a:Cases) {
@@ -281,7 +281,7 @@ void SwitchStmAST::GenIR(string lableCase, string lableBreak, string lableContin
         IRCodes.splice(it,a->IRCodes);
     }
     if(containDefault) {
-        IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(SwitchDefault,0,0)));
+        IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(SwitchDefault,0,0,0)));
         for(auto a:Default)
         {
             a->GenIR("", SwitchEnd, lableContinue);
@@ -289,7 +289,7 @@ void SwitchStmAST::GenIR(string lableCase, string lableBreak, string lableContin
             IRCodes.splice(it,a->IRCodes);
         }
     }
-    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(SwitchEnd,0,0)));
+    IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(SwitchEnd,0,0,0)));
 }
 void ReturnStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
 {
@@ -302,11 +302,11 @@ void ReturnStmAST::GenIR(string lableCase, string lableBreak, string lableContin
 }
 void BreakStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
 {
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(lableBreak,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(lableBreak,0,0,0)));
 }
 void ContinueStmAST::GenIR(string lableCase, string lableBreak, string lableContinue)
 {
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(lableContinue,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(lableContinue,0,0,0)));
 }
 
 /**************表达式的中间代码生成************************/
@@ -315,7 +315,7 @@ Opn VarAST::GenIR(int &TempVarOffset)
     //通过语义检查后，VarRef指向对应表项，否则为空，程序会崩溃
     if(VarRef->Kind == 'V' || VarRef->Kind == 'P') 
     {
-        Opn VarOpn(VarRef->Alias,VarRef->Type,VarRef->Offset);
+        Opn VarOpn(VarRef->Alias,VarRef->Type,VarRef->Offset, VarRef->isGolbal);
         return VarOpn;
     }
     else if(VarRef->Kind == 'A')
@@ -326,15 +326,15 @@ Opn VarAST::GenIR(int &TempVarOffset)
         IRCodes.splice(it,index[0]->IRCodes);
         for(int i=1;i<index.size();i++) 
         {
-            Opn DimValue(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存常量值
+            Opn DimValue(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存常量值
             TempVarOffset+=TypeWidth[T_INT];           //修改临时变量的偏移量
             if (TempVarOffset>MaxTempVarOffset)
                 MaxTempVarOffset=TempVarOffset;
-            Opn Opn1("_CONST",T_INT,0);             //别名或临时变量名为_CONST时，表示常量
+            Opn Opn1("_CONST",T_INT,0,0);             //别名或临时变量名为_CONST时，表示常量
             Opn1.constINT=VarRef->Dims[i];
             IRCodes.push_back(IRCode(ASSIGN,Opn1,Opn(),DimValue));
 
-            Opn MultiResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+            Opn MultiResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
             TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
             if (TempVarOffset>MaxTempVarOffset)
                 MaxTempVarOffset=TempVarOffset;
@@ -344,7 +344,7 @@ Opn VarAST::GenIR(int &TempVarOffset)
             it=IRCodes.end();
             IRCodes.splice(it,index[i]->IRCodes);
 
-            Opn AddResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+            Opn AddResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
             TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
             if (TempVarOffset>MaxTempVarOffset)
                 MaxTempVarOffset=TempVarOffset;
@@ -353,22 +353,22 @@ Opn VarAST::GenIR(int &TempVarOffset)
             Result=AddResult;
         }
 
-        Opn TypeValue(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存常量值
+        Opn TypeValue(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存常量值
         TempVarOffset+=TypeWidth[T_INT];           //修改临时变量的偏移量
         if (TempVarOffset>MaxTempVarOffset)
             MaxTempVarOffset=TempVarOffset;
-        Opn Opn2("_CONST",T_INT,0);             //别名或临时变量名为_CONST时，表示常量
+        Opn Opn2("_CONST",T_INT,0,0);             //别名或临时变量名为_CONST时，表示常量
         Opn2.constINT=TypeWidth[VarRef->Type];
         IRCodes.push_back(IRCode(ASSIGN,Opn2,Opn(),TypeValue));
 
-        Opn OffsetResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+        Opn OffsetResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
         TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
         if (TempVarOffset>MaxTempVarOffset)
             MaxTempVarOffset=TempVarOffset;
         IRCodes.push_back(IRCode(STAR,Result,TypeValue,OffsetResult));
 
         OffsetOpn offsetOpn(1, OffsetResult.Name, T_INT, OffsetResult.Offset);
-        Opn VarOpn(VarRef->Alias,VarRef->Type,VarRef->Offset, offsetOpn);
+        Opn VarOpn(VarRef->Alias,VarRef->Type,VarRef->Offset, VarRef->isGolbal, offsetOpn);
         return VarOpn;
     }
 }
@@ -377,19 +377,19 @@ void VarAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 {
     //根据变量的值确定转移方向
     Opn Result=GenIR(TempVarOffset);
-    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
-    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
+    Opn Zero("_CONST",T_INT,0,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0,0)));
 }
 
 Opn ConstAST::GenIR(int &TempVarOffset)
 {
     //将常量赋值给生成的临时变量
-    Opn Result(NewTemp(),Type,TempVarOffset+MaxVarSize); //生成临时变量保存常量值
+    Opn Result(NewTemp(),Type,TempVarOffset+MaxVarSize,0); //生成临时变量保存常量值
     TempVarOffset+=TypeWidth[Type];           //修改临时变量的偏移量
     if (TempVarOffset>MaxTempVarOffset)
         MaxTempVarOffset=TempVarOffset;
-    Opn Opn1("_CONST",Type,0);             //别名或临时变量名为_CONST时，表示常量
+    Opn Opn1("_CONST",Type,0,0);             //别名或临时变量名为_CONST时，表示常量
     Opn1.constCHAR=ConstVal.constCHAR;
     Opn1.constINT=ConstVal.constINT;
     Opn1.constFLOAT=ConstVal.constFLOAT;                //按最大长度的成员进行整体复制
@@ -402,9 +402,9 @@ Opn ConstAST::GenIR(int &TempVarOffset)
 void ConstAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 {
     Opn Result=GenIR(TempVarOffset);
-    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
-    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
+    Opn Zero("_CONST",T_INT,0,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0,0)));
 }
 
 
@@ -425,9 +425,9 @@ void AssignAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 {
     //根据左值表达式的值确定转移方向
     Opn Result=GenIR(TempVarOffset);
-    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
-    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
+    Opn Zero("_CONST",T_INT,0,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0,0)));
 }
 
 
@@ -435,7 +435,7 @@ Opn BinaryExprAST::GenIR(int &TempVarOffset)
 {
     Opn Opn1=LeftExp->GenIR(TempVarOffset);
     Opn Opn2=RightExp->GenIR(TempVarOffset);
-    Opn Result(NewTemp(),Opn1.Type,TempVarOffset+MaxVarSize); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+    Opn Result(NewTemp(),Opn1.Type,TempVarOffset+MaxVarSize,0); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
     TempVarOffset+=TypeWidth[Opn1.Type];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
     if (TempVarOffset>MaxTempVarOffset)
             MaxTempVarOffset=TempVarOffset;
@@ -462,7 +462,7 @@ void BinaryExprAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
             list <IRCode> ::iterator it=IRCodes.end();
             IRCodes.splice(it,LeftExp->IRCodes);
             
-            IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(Label,0,0)));
+            IRCodes.push_back(IRCode(LABEL,Opn(),Opn(),Opn(Label,0,0,0)));
             it=IRCodes.end();
             IRCodes.splice(it,RightExp->IRCodes);
             }
@@ -470,9 +470,9 @@ void BinaryExprAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
         case PLUS:  case MINUS:  case STAR:  case  DIV:    case MOD:
             {
             Opn Result=GenIR(TempVarOffset);
-            Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
-            IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
-            IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
+            Opn Zero("_CONST",T_INT,0,0);Zero.constINT=0;
+            IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0,0)));
+            IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0,0)));
             }
             break;
         default:     //处理关系运算符
@@ -482,21 +482,21 @@ void BinaryExprAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
             IRCodes.splice(it,LeftExp->IRCodes);
             it=IRCodes.end();
             IRCodes.splice(it,RightExp->IRCodes);
-            IRCode IR(JGT,Opn1,Opn2,Opn(LabelTrue,0,0));
+            IRCode IR(JGT,Opn1,Opn2,Opn(LabelTrue,0,0,0));
             if (Op==GE) IR.Op=JGE;
             else if (Op==LT) IR.Op=JLT;
             else if (Op==LE) IR.Op=JLE;
             else if (Op==EQ) IR.Op=JEQ;
             else if (Op==NE) IR.Op=JNE;
             IRCodes.push_back(IR);
-            IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
+            IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0,0)));
     }
 }
 
 Opn UnaryExprAST::GenIR(int &TempVarOffset)
 {
     Opn Opn1=Exp->GenIR(TempVarOffset);
-    Opn Result(NewTemp(),Exp->Type,TempVarOffset+MaxVarSize);
+    Opn Result(NewTemp(),Exp->Type,TempVarOffset+MaxVarSize,0);
     TempVarOffset+=TypeWidth[Exp->Type];
     if (TempVarOffset>MaxTempVarOffset)
         MaxTempVarOffset=TempVarOffset;
@@ -513,9 +513,9 @@ void UnaryExprAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
     //list <IRCode> ::iterator it=IRCodes.end();
     //IRCodes.splice(it,Exp->IRCodes);
     Opn Result=GenIR(TempVarOffset);
-    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
-    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
+    Opn Zero("_CONST",T_INT,0,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0,0)));
 }
 
 
@@ -545,7 +545,7 @@ Opn FuncCallAST::GenIR(int &TempVarOffset)
     Opn1.SymPtr=FuncRef;
     if (FuncRef->Type!=T_VOID)
     {
-        Result=Opn(NewTemp(),FuncRef->Type,TempVarOffset+MaxVarSize);//临时变量保存返回结果
+        Result=Opn(NewTemp(),FuncRef->Type,TempVarOffset+MaxVarSize,0);//临时变量保存返回结果
         TempVarOffset+=TypeWidth[FuncRef->Type];
         if (TempVarOffset>MaxTempVarOffset)
             MaxTempVarOffset=TempVarOffset;
@@ -559,7 +559,7 @@ Opn FuncCallAST::GenIR(int &TempVarOffset)
 void FuncCallAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 {
     Opn Result=GenIR(TempVarOffset);
-    Opn Zero("_CONST",T_INT,0);Zero.constINT=0;
-    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0)));
-    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0)));
+    Opn Zero("_CONST",T_INT,0,0);Zero.constINT=0;
+    IRCodes.push_back(IRCode(JNE,Result,Zero,Opn(LabelTrue,0,0,0)));
+    IRCodes.push_back(IRCode(GOTO,Opn(),Opn(),Opn(LabelFalse,0,0,0)));
 }
