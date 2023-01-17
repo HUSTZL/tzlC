@@ -6,59 +6,43 @@
 string LoadFromMem(string Reg1, Opn opn, string Reg2)
 {
     string load;
-    if(Reg2 != "$sp" || (Reg2 == "$sp" && opn.isGolbal==0)) 
-    {
-        if(!opn.offsetOpn.isArraySub)
-            load = "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
-        else 
-            load=
-                "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + "$sp" + ")\n" +
-                "  add " + Reg2 + ", " + Reg2 + ", $t4\n" +
-                "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
-                "  sub " + Reg2 + ", " + Reg2 + ", $t4"; 
-    }
-    else 
-    {
+    if(!(Reg2 != "$sp" || (Reg2 == "$sp" && opn.isGolbal==0))) 
         Reg2 = "$gp";
-        if(!opn.offsetOpn.isArraySub)
-            load = "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
-        else 
-            load=
-                "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + "$sp" + ")\n" +
-                "  add " + Reg2 + ", " + Reg2 + ", $t4\n" +
-                "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
-                "  sub " + Reg2 + ", " + Reg2 + ", $t4"; 
-    }
+    load = "  lw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+    return load;
+}
+
+string LoadFromMem(string Reg1, Opn opn1, Opn opn2, string Reg2)
+{
+    string load;
+    if(!(Reg2 != "$sp" || (Reg2 == "$sp" && opn1.isGolbal==0)))
+        Reg2 = "$gp";
+    load =  "  lw $t4,  " + to_string(opn2.Offset) + "(" + "$sp" + ")\n" +
+            "  add " + Reg2 + ", " + Reg2 + ", " + "$t4\n" + 
+            "  lw " + Reg1 + ",  " + to_string(opn1.Offset) + "(" + Reg2 + ")\n" +
+            "  sub " + Reg2 + ", " + Reg2 + ", $t4";
     return load;
 }
 
 string StoreToMem (string Reg1, Opn opn, string Reg2)
 {
-    string load;
-    if(Reg2 != "$sp" || (Reg2 == "$sp" && opn.isGolbal==0)) 
-    {
-        if(!opn.offsetOpn.isArraySub)
-            load = "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
-        else 
-            load=
-                "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + "$sp" + ")\n" +
-                "  add " + Reg2 + ", " + Reg2 + ", $t4\n" +
-                "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
-                "  sub " + Reg2 + ", " + Reg2 + ", $t4"; 
-    }
-    else
-    {
+    string store;
+    if(!(Reg2 != "$sp" || (Reg2 == "$sp" && opn.isGolbal==0))) 
         Reg2 = "$gp";
-        if(!opn.offsetOpn.isArraySub)
-            load = "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
-        else 
-            load=
-                "  lw $t4,  " + to_string(opn.offsetOpn.Offset) + "(" + "$sp" + ")\n" +
-                "  add " + Reg2 + ", " + Reg2 + ", $t4\n" +
-                "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")\n" +
-                "  sub " + Reg2 + ", " + Reg2 + ", $t4"; 
-    }
-    return load;
+    store = "  sw " + Reg1 + ",  " + to_string(opn.Offset) + "(" + Reg2 + ")";
+    return store;
+}
+
+string StoreToMem (string Reg1, Opn opn1, Opn opn2, string Reg2)
+{
+    string store;
+    if(!(Reg2 != "$sp" || (Reg2 == "$sp" && opn1.isGolbal==0))) 
+        Reg2 = "$gp";
+    store =  "  lw $t4,  " + to_string(opn2.Offset) + "(" + "$sp" + ")\n" +
+             "  add " + Reg2 + ", " + Reg2 + ", " + "$t4\n" + 
+             "  sw " + Reg1 + ",  " + to_string(opn1.Offset) + "(" + Reg2 + ")\n" +
+             "  sub " + Reg2 + ", " + Reg2 + ", $t4";
+    return store;
 }
 
 void GenObject(list <IRCode> IRCodes)
@@ -98,6 +82,14 @@ void GenObject(list <IRCode> IRCodes)
                 else       //这里只考虑了简单变量，数组则需要扩充
                     ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
                 ObjectFile<< StoreToMem("$t1", it->Result, "$sp") << endl;
+                break;
+            case ARRLOAD:
+                ObjectFile<< LoadFromMem("$t1", it->Opn1, it->Opn2, "$sp") << endl;
+                ObjectFile<< StoreToMem("$t1", it->Result ,"$sp") <<endl;
+                break;
+            case ARRASSIGN:
+                ObjectFile<< LoadFromMem("$t1", it->Opn2, "$sp") << endl;
+                ObjectFile<< StoreToMem("$t1", it->Result, it->Opn1, "$sp") <<endl;
                 break;
             case PLUS:
             case MINUS:

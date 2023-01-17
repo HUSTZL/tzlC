@@ -14,6 +14,6 @@ int main () {
     for(i = 0; i < 5; i++)
         write(b[i][i]);
     
-    write(fibo(4));
+    write(fibo(b[1][3]));
     return 0;
 }

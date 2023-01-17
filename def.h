@@ -102,17 +102,6 @@ class SymbolStackDef{//符号表类定义,栈结构栈底为全局变量和函�
 };
 
 /**************中间代码（四元式）定义**********************/
-class OffsetOpn
-{
-    public:
-        int     isArraySub=0;
-        string  Name;       //变量别名（为空时表示常量）或函数名
-        int     Type;
-        int     Offset;     //AR中的偏移量
-
-        OffsetOpn(int isArraySub,string Name,int Type,int Offset):isArraySub(isArraySub),Name(Name),Type(Type),Offset(Offset){};
-        OffsetOpn(){};
-};
 
 class Opn
 {
@@ -128,10 +117,8 @@ class Opn
             int   constINT;
             float constFLOAT;
         };
-        OffsetOpn offsetOpn;
 
         Opn(string Name,int Type,int Offset,int isGolbal):Name(Name),Type(Type),Offset(Offset),isGolbal(isGolbal){};
-        Opn(string Name,int Type,int Offset,int isGolbal, OffsetOpn offsetOpn):Name(Name),Type(Type),Offset(Offset),isGolbal(isGolbal),offsetOpn(offsetOpn){};
         Opn(){};
 };
 

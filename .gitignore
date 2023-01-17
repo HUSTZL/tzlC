@@ -6,3 +6,4 @@
 /*.tab.hpp
 /*.tab.o
 parser
+/*.s
