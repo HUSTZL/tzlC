@@ -17,8 +17,8 @@ string NewLabel()
 }
 
 map <int,string> Instruction={{LABEL,"LABEL "},{FUNCTION,"FUNCTION  "},{ASSIGN,":="},{PLUS,"+"},{UPLUS,"+"},
-                    {MINUS,"-"},{UMINUS,"-"},{DPLUS, "++"}, {DMINUS, "--"}, {PLUSD, "++"}, {MINUSD, "--"}, 
-                    {STAR,"*"},{DIV,"/"},{GOTO,"  GOTO  "},
+                    {MINUS,"-"},{UMINUS,"-"},{NOT, "!"},{DPLUS, "++"}, {DMINUS, "--"}, {PLUSD, "++"}, {MINUSD, "--"}, 
+                    {STAR,"*"},{DIV,"/"},{GOTO,"  GOTO  "},{ARRDPLUS, "++"}, {ARRDMINUS, "--"}, {ARRPLUSD, "++"}, {ARRMINUSD, "--"}, 
                     {GT,">"},{GE,">="},{LT,"<"},{LE,"<="},{EQ,"=="},{NE,"!="},
                     {JGT,">"},{JGE,">="},{JLT,"<"},{JLE,"<="},{JEQ,"=="},{JNE,"!="},
                     {RETURN,"  RETURN  "},{ARG,"  ARG  "},{PARAM,"  PARAM  "}};
@@ -39,7 +39,7 @@ void DisplayIR(list <IRCode> IRCodes)
 
         switch (a.Op) {
             case ASSIGN: cout<<"  "<<ResultStr<<" := "<<OpnStr1<<endl; break;
-            case UPLUS: case UMINUS:
+            case UPLUS: case UMINUS:  case NOT:
                          cout<<"  "<<ResultStr<<" := "<<Instruction[a.Op]<<" "<<OpnStr1<<endl; break;
             case PLUS:  case MINUS:  case STAR:   case DIV:
             case LE:  case LT:   case GE: case GT:  case EQ:  case NE:
@@ -48,8 +48,12 @@ void DisplayIR(list <IRCode> IRCodes)
                          cout<<"  "<<"IF "<<OpnStr1<<Instruction[a.Op]<<OpnStr2<<" GOTO "<<ResultStr<<endl;break;
             case DPLUS: case DMINUS:
                          cout<<"  "<<ResultStr<<":= "<<Instruction[a.Op]<<OpnStr1<<endl;break;
+            case ARRDPLUS: case ARRDMINUS:
+                         cout<<"  "<<ResultStr<<":= "<<Instruction[a.Op]<<OpnStr1<<"["<<OpnStr2<<"]"<<endl;break;             
             case PLUSD: case MINUSD:
                          cout<<"  "<<ResultStr<<":= "<<OpnStr1<<Instruction[a.Op]<<endl;break;
+            case ARRPLUSD: case ARRMINUSD:
+                         cout<<"  "<<ResultStr<<":= "<<OpnStr1<<"["<<OpnStr2<<"]"<<Instruction[a.Op]<<endl;break;
             case GOTO: case PARAM: case ARG: case RETURN:
                          cout<<Instruction[a.Op]<<ResultStr<<endl; break;
             case FUNCTION:case LABEL:
@@ -481,11 +485,6 @@ Opn AssignAST::GenIR(int &TempVarOffset)
             MaxTempVarOffset=TempVarOffset;
         IRCodes.push_back(IRCode(STAR,Result,TypeValue,OffsetResult));
 
-        Opn LoadEnd(NewTemp(),((VarAST *)LeftValExp)->VarRef->Type,TempVarOffset+MaxVarSize,0); //生成临时变量保存常量值
-        TempVarOffset+=TypeWidth[((VarAST *)LeftValExp)->VarRef->Type];           //修改临时变量的偏移量
-        if (TempVarOffset>MaxTempVarOffset)
-            MaxTempVarOffset=TempVarOffset;
-
         Opn Arr(((VarAST *)LeftValExp)->VarRef->Alias, ((VarAST *)LeftValExp)->VarRef->Type, ((VarAST *)LeftValExp)->VarRef->Offset, ((VarAST *)LeftValExp)->VarRef->isGolbal);
 
         Opn OpnRight=RightValExp->GenIR(TempVarOffset);
@@ -572,16 +571,85 @@ void BinaryExprAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)
 
 Opn UnaryExprAST::GenIR(int &TempVarOffset)
 {
-    Opn Opn1=Exp->GenIR(TempVarOffset);
-    Opn Result(NewTemp(),Exp->Type,TempVarOffset+MaxVarSize,0);
-    TempVarOffset+=TypeWidth[Exp->Type];
-    if (TempVarOffset>MaxTempVarOffset)
-        MaxTempVarOffset=TempVarOffset;
+    if(((VarAST *)Exp)->VarRef->Kind!='A' || (((VarAST *)Exp)->VarRef->Kind=='A' && Op != DPLUS && Op != PLUSD && Op != PLUSD && Op != MINUSD)) {
+        Opn Opn1=Exp->GenIR(TempVarOffset);
+        Opn Result(NewTemp(),Exp->Type,TempVarOffset+MaxVarSize,0);
+        TempVarOffset+=TypeWidth[Exp->Type];
+        if (TempVarOffset>MaxTempVarOffset)
+            MaxTempVarOffset=TempVarOffset;
 
-    list <IRCode> ::iterator it=IRCodes.end();
-    IRCodes.splice(it,Exp->IRCodes);
-    IRCodes.push_back(IRCode(Op,Opn1,Opn(),Result));
-    return Result;
+        list <IRCode> ::iterator it=IRCodes.end();
+        IRCodes.splice(it,Exp->IRCodes);
+        IRCodes.push_back(IRCode(Op,Opn1,Opn(),Result));
+        return Result;
+    }
+    else 
+    {
+        list <IRCode> ::iterator it=IRCodes.end();
+        Opn Result=((VarAST *)Exp)->index[0]->GenIR(TempVarOffset);
+        it=IRCodes.end();
+        IRCodes.splice(it,((VarAST *)Exp)->index[0]->IRCodes);
+        for(int i=1;i<((VarAST *)Exp)->index.size();i++) 
+        {
+            Opn DimValue(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存常量值
+            TempVarOffset+=TypeWidth[T_INT];           //修改临时变量的偏移量
+            if (TempVarOffset>MaxTempVarOffset)
+                MaxTempVarOffset=TempVarOffset;
+            Opn Opn1("_CONST",T_INT,0,0);             //别名或临时变量名为_CONST时，表示常量
+            Opn1.constINT=((VarAST *)Exp)->VarRef->Dims[i];
+            IRCodes.push_back(IRCode(ASSIGN,Opn1,Opn(),DimValue));
+
+            Opn MultiResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+            TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
+            if (TempVarOffset>MaxTempVarOffset)
+                MaxTempVarOffset=TempVarOffset;
+            IRCodes.push_back(IRCode(STAR,Result,DimValue,MultiResult));
+
+            Opn IndexValue=((VarAST *)Exp)->index[i]->GenIR(TempVarOffset);
+            it=IRCodes.end();
+            IRCodes.splice(it,((VarAST *)Exp)->index[i]->IRCodes);
+
+            Opn AddResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+            TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
+            if (TempVarOffset>MaxTempVarOffset)
+                MaxTempVarOffset=TempVarOffset;
+            IRCodes.push_back(IRCode(PLUS,MultiResult,IndexValue,AddResult));
+
+            Result=AddResult;
+        }
+
+        Opn TypeValue(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存常量值
+        TempVarOffset+=TypeWidth[T_INT];           //修改临时变量的偏移量
+        if (TempVarOffset>MaxTempVarOffset)
+            MaxTempVarOffset=TempVarOffset;
+        Opn Opn2("_CONST",T_INT,0,0);             //别名或临时变量名为_CONST时，表示常量
+        Opn2.constINT=TypeWidth[((VarAST *)Exp)->VarRef->Type];
+        IRCodes.push_back(IRCode(ASSIGN,Opn2,Opn(),TypeValue));
+
+        Opn OffsetResult(NewTemp(),T_INT,TempVarOffset+MaxVarSize,0); //生成临时变量保存运算结果，结果类型应该根据运算结果来定
+        TempVarOffset+=TypeWidth[T_INT];           //这里只是简单处理成和左右操作数类型相同，修改临时变量的偏移量
+        if (TempVarOffset>MaxTempVarOffset)
+            MaxTempVarOffset=TempVarOffset;
+        IRCodes.push_back(IRCode(STAR,Result,TypeValue,OffsetResult));
+
+        Opn CalEnd(NewTemp(),((VarAST *)Exp)->VarRef->Type,TempVarOffset+MaxVarSize,0); //生成临时变量保存常量值
+        TempVarOffset+=TypeWidth[((VarAST *)Exp)->VarRef->Type];           //修改临时变量的偏移量
+        if (TempVarOffset>MaxTempVarOffset)
+            MaxTempVarOffset=TempVarOffset;
+
+        Opn Arr(((VarAST *)Exp)->VarRef->Alias, ((VarAST *)Exp)->VarRef->Type, ((VarAST *)Exp)->VarRef->Offset, ((VarAST *)Exp)->VarRef->isGolbal);
+
+        if(Op == DPLUS)
+            IRCodes.push_back(IRCode(ARRDPLUS,Arr,OffsetResult,CalEnd));
+        else if(Op == PLUSD)
+            IRCodes.push_back(IRCode(ARRPLUSD,Arr,OffsetResult,CalEnd));
+        else if(Op == DMINUS)
+            IRCodes.push_back(IRCode(ARRDMINUS,Arr,OffsetResult,CalEnd));
+        else if(Op == MINUSD)
+            IRCodes.push_back(IRCode(ARRMINUSD,Arr,OffsetResult,CalEnd));
+
+        return CalEnd;
+    }
 }
 
 void UnaryExprAST::GenIR(int &TempVarOffset,string LabelTrue,string LabelFalse)

@@ -1,5 +1,7 @@
 /*********以下程序只完成了部分静态语义检查，需自行补充完整*******************/
 #include "def.h"
+#define YYSTYPE int   //此行是为了包含parser.tab.hpp不引起错误而加,可以在后面使用相关常量
+#include "parser.tab.hpp"
 SymbolStackDef AST::SymbolStack=SymbolStackDef();    //初始化静态成员符号表
 FunctionCallTable AST::functionCallTable=FunctionCallTable();
 
@@ -522,7 +524,7 @@ void BinaryExprAST::Semantics(int &Offset)
 void UnaryExprAST::Semantics(int &Offset)
 {
     Exp->Semantics(Offset);
-    if (!IsLeftValue(Exp))
+    if (!IsLeftValue(Exp)  && (Op != UPLUS && Op != UMINUS && Op != NOT))
         Errors::ErrorAdd(Line,Column,"非左值表达式自增、自减");
     Type=Exp->Type;
 }

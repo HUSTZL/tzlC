@@ -112,6 +112,23 @@ void GenObject(list <IRCode> IRCodes)
                  ObjectFile<< StoreToMem("$t3", it->Result, "$sp") << endl;
                  break;
 
+            case AND:
+            case OR:
+                 ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
+                 ObjectFile<< "  sne $t1, $t1, $zero"<<endl;
+                 ObjectFile<< LoadFromMem("$t2", it->Opn2, "$sp") << endl;
+                 ObjectFile<< "  sne $t2, $t2, $zero"<<endl;
+                 if (it->Op==AND)       ObjectFile<< "  and $t3,$t1,$t2"<<endl;
+                 else if (it->Op==OR) ObjectFile<< "  or $t3,$t1,$t2"<<endl;
+                 ObjectFile<< StoreToMem("$t3", it->Result, "$sp") << endl;
+                 break;
+
+            case NOT:
+                 ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
+                 ObjectFile<< "  sne $t1, $t1, $zero"<<endl;
+                 ObjectFile<< "  seq $t1, $t1, $zero"<<endl;
+                 ObjectFile<< StoreToMem("$t1", it->Result, "$sp") << endl;
+                 break;
             case DPLUS:
             case DMINUS:
                  ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
@@ -128,6 +145,32 @@ void GenObject(list <IRCode> IRCodes)
                  if (it->Op==PLUSD)       ObjectFile<< "  addi $t3,$t1,1"<<endl;
                  else if (it->Op==MINUSD) ObjectFile<< "  addi $t3,$t1,-1"<<endl;
                  ObjectFile<< StoreToMem("$t3", it->Opn1, "$sp") << endl;
+                 break;
+
+            case UMINUS:
+                 ObjectFile<< LoadFromMem("$t1", it->Opn1, "$sp") << endl;
+                 ObjectFile<< "  li $t2,-1"<<endl;
+                 ObjectFile<< "  mul $t3,$t1,$t2"<<endl;
+                 ObjectFile<< StoreToMem("$t3", it->Result, "$sp") << endl;
+                 break;
+
+            
+            case ARRDPLUS:
+            case ARRDMINUS:
+                 ObjectFile<< LoadFromMem("$t1", it->Opn1, it->Opn2, "$sp") << endl;
+                 if (it->Op==ARRDPLUS)       ObjectFile<< "  addi $t3,$t1,1"<<endl;
+                 else if (it->Op==ARRDMINUS) ObjectFile<< "  addi $t3,$t1,-1"<<endl;
+                 ObjectFile<< StoreToMem("$t3", it->Opn1, it->Opn2, "$sp") << endl;
+                 ObjectFile<< StoreToMem("$t3", it->Result, "$sp") << endl;
+                 break;
+
+            case ARRPLUSD:
+            case ARRMINUSD:
+                 ObjectFile<< LoadFromMem("$t1", it->Opn1, it->Opn2, "$sp") << endl;
+                 ObjectFile<< StoreToMem("$t1", it->Result, "$sp") << endl;
+                 if (it->Op==ARRPLUSD)       ObjectFile<< "  addi $t3,$t1,1"<<endl;
+                 else if (it->Op==ARRMINUSD) ObjectFile<< "  addi $t3,$t1,-1"<<endl;
+                 ObjectFile<< StoreToMem("$t3", it->Opn1, it->Opn2, "$sp") << endl;
                  break;
 
 

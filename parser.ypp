@@ -75,8 +75,8 @@ typedef struct YYLVAL {
 %token BREAK CONTINUE SWITCH CASE DEFAULT COLON
 
 /*以下为接在上述token后依次编码的枚举常量，用于后续过程*/
-%token EXT_DEF_LIST EXT_VAR_DEF FUNC_DEF FUNC_DEC EXT_DEC_LIST PARAM_LIST PARAM_DEC VAR_DEF DEC_LIST DEF_LIST COMP_STM STM_LIST EXP_STMT IF_THEN IF_THEN_ELSE
-%token FUNC_CALL ARGS FUNCTION PARAM ARG CALL CALL0 LABEL GOTO JLT JLE JGT JGE JEQ JNE END ARRASSIGN ARRLOAD
+%token ARRPRO EXT_DEF_LIST EXT_VAR_DEF FUNC_DEF FUNC_DEC EXT_DEC_LIST PARAM_LIST PARAM_DEC VAR_DEF DEC_LIST DEF_LIST COMP_STM STM_LIST EXP_STMT IF_THEN IF_THEN_ELSE
+%token FUNC_CALL ARGS FUNCTION PARAM ARG CALL CALL0 LABEL GOTO JLT JLE JGT JGE JEQ JNE END ARRASSIGN ARRLOAD ARRDPLUS ARRDMINUS ARRPLUSD ARRMINUSD
 
 
 %left COMMA
@@ -90,6 +90,7 @@ typedef struct YYLVAL {
 %left STAR DIV
 %right UMINUS NOT DPLUS DMINUS UPLUS
 %left PLUSD MINUSD
+%left ARRPRO
 
 %nonassoc LOWER_THEN_ELSE
 %nonassoc ELSE
@@ -207,7 +208,7 @@ Exp:    Exp ASSIGN Exp {AssignAST *t=new AssignAST();t->Op=ASSIGN;
       | Exp DMINUS      {UnaryExprAST *t=new UnaryExprAST();t->Op=MINUSD;t->Exp=$1;$$=t;SavePosition;}
 
 
-      | ID LP Args RP 	{FuncCallAST *t=new FuncCallAST();t->Name=$1;t->Params=$3;$$=t;SavePosition;}
+      | ID LP Args RP %prec ARRPRO	{FuncCallAST *t=new FuncCallAST();t->Name=$1;t->Params=$3;$$=t;SavePosition;}
       | ID            	{VarAST *t=new VarAST();t->Name=$1;$$=t;SavePosition;}
       | ID SubList          {VarAST *t=new VarAST();t->Name=$1;t->index=$2;$$=t;SavePosition;}
       | INT           	{ConstAST *t=new ConstAST();t->Type=T_INT;t->ConstVal.constINT=$1;$$=t;SavePosition;}
